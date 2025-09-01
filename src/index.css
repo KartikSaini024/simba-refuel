@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Professional car rental company design system */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 213 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 213 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 20% 15%;
+
+    --primary: 213 84% 20%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 213 84% 16%;
+
+    --secondary: 213 15% 95%;
+    --secondary-foreground: 213 20% 15%;
+
+    --muted: 213 15% 97%;
+    --muted-foreground: 213 12% 45%;
+
+    --accent: 47 96% 53%;
+    --accent-foreground: 213 20% 15%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 58%;
+    --warning-foreground: 213 20% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 213 15% 92%;
+    --input: 213 15% 96%;
+    --ring: 213 84% 20%;
+
+    /* Custom gradients for the rental company */
+    --gradient-primary: linear-gradient(135deg, hsl(213 84% 20%) 0%, hsl(213 84% 16%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(47 96% 53%) 0%, hsl(45 93% 58%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(213 15% 99%) 0%, hsl(213 15% 96%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(213 20% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(213 20% 15% / 0.1), 0 2px 4px -1px hsl(213 20% 15% / 0.06);
+    --shadow-lg: 0 10px 15px -3px hsl(213 20% 15% / 0.1), 0 4px 6px -2px hsl(213 20% 15% / 0.05);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 213 20% 8%;
+    --foreground: 213 15% 95%;
+
+    --card: 213 20% 10%;
+    --card-foreground: 213 15% 95%;
+
+    --popover: 213 20% 10%;
+    --popover-foreground: 213 15% 95%;
+
+    --primary: 213 84% 65%;
+    --primary-foreground: 213 20% 8%;
+    --primary-hover: 213 84% 60%;
+
+    --secondary: 213 20% 15%;
+    --secondary-foreground: 213 15% 85%;
+
+    --muted: 213 20% 12%;
+    --muted-foreground: 213 12% 55%;
+
+    --accent: 47 96% 65%;
+    --accent-foreground: 213 20% 8%;
+
+    --success: 142 71% 55%;
+    --success-foreground: 213 20% 8%;
+
+    --warning: 45 93% 68%;
+    --warning-foreground: 213 20% 8%;
+
+    --destructive: 0 84% 70%;
+    --destructive-foreground: 213 20% 8%;
+
+    --border: 213 20% 18%;
+    --input: 213 20% 15%;
+    --ring: 213 84% 65%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(213 84% 65%) 0%, hsl(213 84% 60%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(47 96% 65%) 0%, hsl(45 93% 68%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(213 20% 10%) 0%, hsl(213 20% 12%) 100%);
+
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.2), 0 2px 4px -1px hsl(0 0% 0% / 0.15);
+    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.3), 0 4px 6px -2px hsl(0 0% 0% / 0.2);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
