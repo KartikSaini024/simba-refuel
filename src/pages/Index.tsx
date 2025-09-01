@@ -8,9 +8,11 @@ import { Fuel, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import simbaLogo from '@/assets/simba-logo-hd.png';
+import { ReceiptImages } from '@/components/ReceiptImages';
 
 const Index = () => {
   const [records, setRecords] = useState<RefuelRecord[]>([]);
+  const [receiptImages, setReceiptImages] = useState<string[]>([]);
   const [staff, setStaff] = useState<Staff[]>([
     { id: '1', name: 'Kartik' },
     { id: '2', name: 'Maaz' },
@@ -81,6 +83,14 @@ const Index = () => {
       title: "Record Removed",
       description: "The refuel record has been removed successfully.",
     });
+  };
+
+  const addReceiptImages = (images: string[]) => {
+    setReceiptImages(prev => [...images, ...prev]);
+  };
+
+  const removeReceiptImage = (index: number) => {
+    setReceiptImages(prev => prev.filter((_, i) => i !== index));
   };
 
   const addStaff = (name: string) => {
@@ -177,7 +187,10 @@ const Index = () => {
             <RefuelTable
               records={records}
               onRemoveRecord={removeRecord}
-              onClearAll={() => setRecords([])}
+              onClearAll={() => {
+                setRecords([]);
+                setReceiptImages([]);
+              }}
             />
           </div>
           
@@ -187,7 +200,12 @@ const Index = () => {
               onAddStaff={addStaff} 
               onRemoveStaff={removeStaff} 
             />
-            <PDFGenerator records={records} staff={staff} />
+            <ReceiptImages
+              images={receiptImages}
+              onAddImages={addReceiptImages}
+              onRemoveImage={removeReceiptImage}
+            />
+            <PDFGenerator records={records} staff={staff} receiptImages={receiptImages} />
           </div>
         </div>
       </main>
