@@ -140,7 +140,7 @@ export const PDFGenerator = ({ records, staff }: PDFGeneratorProps) => {
         (index + 1).toString(),
         record.reservationNumber,
         record.rego,
-        record.addedToRCM ? "✅ Yes" : "❌ No",
+        record.addedToRCM ? "Yes" : "No",
         `$${record.amount.toFixed(2)}`,
         record.refuelledBy,
         format(record.createdAt, 'HH:mm')

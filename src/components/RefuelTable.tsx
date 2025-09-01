@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trash2, FileText } from 'lucide-react';
+import { Trash2, FileText, RotateCcw } from 'lucide-react';
 import { RefuelRecord } from '@/types/refuel';
 import { format } from 'date-fns';
 import {
@@ -20,9 +20,10 @@ import {
 interface RefuelTableProps {
   records: RefuelRecord[];
   onRemoveRecord: (id: string) => void;
+  onClearAll: () => void;
 }
 
-export const RefuelTable = ({ records, onRemoveRecord }: RefuelTableProps) => {
+export const RefuelTable = ({ records, onRemoveRecord, onClearAll }: RefuelTableProps) => {
   const totalAmount = records.reduce((sum, record) => sum + record.amount, 0);
 
   if (records.length === 0) {
@@ -45,11 +46,36 @@ export const RefuelTable = ({ records, onRemoveRecord }: RefuelTableProps) => {
 
   return (
     <Card className="shadow-md">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-primary">
           <FileText className="h-5 w-5" />
           Today's Refuel Records ({records.length})
         </CardTitle>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              Reset Table
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset All Records</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove all refuel records from the table. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={onClearAll}
+                className="bg-destructive hover:bg-destructive/90"
+              >
+                Reset
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
