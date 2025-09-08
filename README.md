@@ -1,142 +1,73 @@
-# Simba Car Hire - Refuel Management System
+# Welcome to your Lovable project
 
-A comprehensive web application for managing vehicle refueling operations, staff management, and generating professional PDF reports.
+## Project info
 
-## Features
+**URL**: https://lovable.dev/projects/d479f1c6-2d16-419e-a9dc-d59d7dc6f8ff
 
-- **Refuel Record Management**: Add, edit, and track vehicle refueling records
-- **Staff Management**: Manage staff members and their roles
-- **PDF Report Generation**: Create professional PDF reports with digital signatures
-- **RCM Integration**: Track which records have been added to RCM system
-- **Responsive Design**: Works on desktop and mobile devices
-- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
+## How can I edit this code?
 
-## Technologies Used
+There are several ways of editing your application.
 
-- **Frontend**: React 18 + TypeScript
-- **Build Tool**: Vite
-- **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS
-- **PDF Generation**: jsPDF + jspdf-autotable
-- **Date Handling**: date-fns
-- **Icons**: Lucide React
+**Use Lovable**
 
-## Getting Started
+Simply visit the [Lovable Project](https://lovable.dev/projects/d479f1c6-2d16-419e-a9dc-d59d7dc6f8ff) and start prompting.
 
-### Prerequisites
+Changes made via Lovable will be committed automatically to this repo.
 
-- Node.js 18+ and npm/yarn/bun
-- Git
+**Use your preferred IDE**
 
-### Installation
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repository-url>
-   cd simba-refuel
-   ```
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   bun install
-   ```
+Follow these steps:
 
-3. **Start development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   bun dev
-   ```
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-4. **Open your browser**
-   Navigate to `http://localhost:5173` (or the port shown in your terminal)
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-## Usage Guide
+# Step 3: Install the necessary dependencies.
+npm i
 
-### Adding Refuel Records
-
-1. Navigate to the main page
-2. Fill out the refuel form with:
-   - Reservation number
-   - Vehicle registration
-   - Fuel amount
-   - Staff member who refueled
-   - RCM status (if added to RCM system)
-3. Click "Add Record" to save
-
-### Managing Staff
-
-1. Go to the Staff Management section
-2. Add new staff members with their names
-3. Edit or remove existing staff as needed
-
-### Generating PDF Reports
-
-1. Ensure you have refuel records in the system
-2. Select who checked/verified the list
-3. Optionally draw a digital signature
-4. Click "Generate PDF Report"
-5. The PDF will download automatically with:
-   - Company branding
-   - Professional table formatting
-   - Summary statistics
-   - Digital signature (if provided)
-
-### RCM Status Tracking
-
-- Records marked as "Added to RCM" will show ✓ Yes
-- Records not in RCM will show ❌ No
-- PDF reports include RCM count summaries
-
-## Project Structure
-
-```
-src/
-├── components/          # React components
-│   ├── PDFGenerator.tsx    # PDF generation logic
-│   ├── RefuelForm.tsx      # Refuel record form
-│   ├── RefuelTable.tsx     # Records display table
-│   ├── StaffManagement.tsx # Staff management interface
-│   └── ui/                 # shadcn/ui components
-├── types/              # TypeScript type definitions
-├── hooks/              # Custom React hooks
-├── lib/                # Utility functions
-└── assets/             # Images and static files
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
 ```
 
-## Available Scripts
+**Edit a file directly in GitHub**
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run lint` - Run ESLint
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## Building for Production
+**Use GitHub Codespaces**
 
-```bash
-npm run build
-```
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-The built files will be in the `dist/` directory, ready for deployment.
+## What technologies are used for this project?
 
-## Contributing
+This project is built with:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-## License
+## How can I deploy this project?
 
-This project is proprietary software for Simba Car Hire.
+Simply open [Lovable](https://lovable.dev/projects/d479f1c6-2d16-419e-a9dc-d59d7dc6f8ff) and click on Share -> Publish.
 
-## Support
+## Can I connect a custom domain to my Lovable project?
 
-For technical support or questions, please contact the development team or create an issue in the repository.
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

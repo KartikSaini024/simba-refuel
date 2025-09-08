@@ -1,0 +1,2 @@
+-- Create default admin user (you'll need to sign up first, then run this to promote to admin)
+-- UPDATE public.profiles SET role = 'admin', status = 'approved' WHERE email = 'your-email@example.com';
