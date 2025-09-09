@@ -9,6 +9,16 @@ export interface DatabaseRefuelRecord {
   created_by: string;
   created_at: string;
   updated_at: string;
+  is_temporary?: boolean;
+  refuel_datetime: string;
+}
+
+export interface DatabaseStaff {
+  id: string;
+  name: string;
+  branch_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Branch {

@@ -4,48 +4,31 @@ import { RefuelForm } from '@/components/RefuelForm';
 import { StaffManagement } from '@/components/StaffManagement';
 import { RefuelTable } from '@/components/RefuelTable';
 import { PDFGenerator } from '@/components/PDFGenerator';
+import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
 import BranchSelector from '@/components/BranchSelector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefuelRecord, Staff } from '@/types/refuel';
-import { Fuel, Calendar, LogOut, Settings, User } from 'lucide-react';
-import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RefuelRecord } from '@/types/refuel';
+import { DatabaseRefuelRecord } from '@/types/database';
+import { Fuel, Calendar, LogOut, Settings, User, RotateCcw, AlertTriangle } from 'lucide-react';
+import { format, isToday } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useActivityLog } from '@/hooks/useActivityLog';
+import { useStaff } from '@/hooks/useStaff';
 import { supabase } from '@/integrations/supabase/client';
 import simbaLogo from '@/assets/simba-logo-hd.png';
-
-interface DatabaseRefuelRecord {
-  id: string;
-  branch_id: string;
-  reservation_number: string;
-  rego: string;
-  added_to_rcm: boolean;
-  amount: number;
-  refuelled_by: string;
-  created_at: string;
-}
 
 const Index = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, signOut, loading } = useAuthContext();
-  const { logActivity } = useActivityLog();
   const [records, setRecords] = useState<RefuelRecord[]>([]);
-  const [staff, setStaff] = useState<Staff[]>([
-    { id: '1', name: 'Kartik' },
-    { id: '2', name: 'Maaz' },
-    { id: '3', name: 'Naeem' },
-    { id: '4', name: 'Katrina' },
-    { id: '5', name: 'Jenny' },
-    { id: '6', name: 'Jamil' },
-    { id: '7', name: 'Chenar' },
-    { id: '8', name: 'Rusdan' },
-  ]);
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [selectedBranchName, setSelectedBranchName] = useState<string>('');
   const [loadingData, setLoadingData] = useState(false);
-  const { toast } = useToast();
+  const [showDateWarning, setShowDateWarning] = useState(false);
+  const { staff, loading: staffLoading, addStaff, removeStaff } = useStaff(selectedBranchId || undefined);
 
   // Redirect to auth if not logged in, not approved, or redirect admins to dashboard
   useEffect(() => {
@@ -72,11 +55,34 @@ const Index = () => {
     
     if (selectedBranchId && user && profile?.status === 'approved') {
       loadBranchRecords();
+      loadBranchInfo();
     } else if (profile?.branch_id && !selectedBranchId && profile?.status === 'approved' && !branchParam) {
       // Auto-select user's branch if they're staff and no URL param
       setSelectedBranchId(profile.branch_id);
     }
   }, [selectedBranchId, user, profile, searchParams]);
+
+  // Check for date warnings when records change
+  useEffect(() => {
+    checkDateWarnings();
+  }, [records]);
+
+  const loadBranchInfo = async () => {
+    if (!selectedBranchId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('branches')
+        .select('name')
+        .eq('id', selectedBranchId)
+        .single();
+
+      if (error) throw error;
+      setSelectedBranchName(data.name);
+    } catch (error) {
+      console.error('Error loading branch info:', error);
+    }
+  };
 
   const loadBranchRecords = async () => {
     if (!selectedBranchId) return;
@@ -89,9 +95,10 @@ const Index = () => {
         .from('refuel_records')
         .select('*')
         .eq('branch_id', selectedBranchId)
+        .eq('is_temporary', true)
         .gte('created_at', `${today}T00:00:00`)
         .lt('created_at', `${today}T23:59:59`)
-        .order('created_at', { ascending: false });
+        .order('refuel_datetime', { ascending: false });
 
       if (error) throw error;
 
@@ -101,17 +108,14 @@ const Index = () => {
         reservationNumber: record.reservation_number,
         rego: record.rego,
         addedToRCM: record.added_to_rcm,
-        amount: record.amount,
+        amount: Number(record.amount),
         refuelledBy: record.refuelled_by,
         createdAt: new Date(record.created_at),
+        refuelDateTime: new Date(record.refuel_datetime),
+        isTemporary: record.is_temporary,
       }));
 
       setRecords(convertedRecords);
-      
-      await logActivity('view', 'refuel_records', undefined, { 
-        branch_id: selectedBranchId, 
-        count: convertedRecords.length 
-      }, selectedBranchId);
     } catch (error) {
       console.error('Error loading records:', error);
       toast({
@@ -124,13 +128,18 @@ const Index = () => {
     }
   };
 
+  const checkDateWarnings = () => {
+    const hasOldRecords = records.some(record => !isToday(record.refuelDateTime));
+    setShowDateWarning(hasOldRecords);
+  };
+
   const addRecord = async (recordData: Omit<RefuelRecord, 'id' | 'createdAt'>) => {
     if (!selectedBranchId || !user) return;
 
     try {
       const { data, error } = await supabase
         .from('refuel_records')
-        .insert([{
+        .insert({
           branch_id: selectedBranchId,
           reservation_number: recordData.reservationNumber,
           rego: recordData.rego,
@@ -138,7 +147,9 @@ const Index = () => {
           amount: recordData.amount,
           refuelled_by: recordData.refuelledBy,
           created_by: user.id,
-        }])
+          is_temporary: true,
+          refuel_datetime: recordData.refuelDateTime.toISOString(),
+        })
         .select()
         .single();
 
@@ -150,9 +161,11 @@ const Index = () => {
         reservationNumber: data.reservation_number,
         rego: data.rego,
         addedToRCM: data.added_to_rcm,
-        amount: data.amount,
+        amount: Number(data.amount),
         refuelledBy: data.refuelled_by,
         createdAt: new Date(data.created_at),
+        refuelDateTime: new Date(data.refuel_datetime),
+        isTemporary: data.is_temporary,
       };
 
       setRecords(prev => [newRecord, ...prev]);
@@ -161,14 +174,50 @@ const Index = () => {
         title: "Record Added",
         description: `Refuel record for ${recordData.rego} has been added successfully.`,
       });
-
-      await logActivity('create', 'refuel_record', data.id, recordData, selectedBranchId);
     } catch (error) {
       console.error('Error adding record:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to add refuel record.",
+      });
+    }
+  };
+
+  const updateRecord = async (id: string, updatedData: Partial<RefuelRecord>) => {
+    if (!selectedBranchId) return;
+
+    try {
+      const updateObject: any = {};
+      
+      if (updatedData.reservationNumber) updateObject.reservation_number = updatedData.reservationNumber;
+      if (updatedData.rego) updateObject.rego = updatedData.rego;
+      if (updatedData.addedToRCM !== undefined) updateObject.added_to_rcm = updatedData.addedToRCM;
+      if (updatedData.amount !== undefined) updateObject.amount = updatedData.amount;
+      if (updatedData.refuelledBy) updateObject.refuelled_by = updatedData.refuelledBy;
+      if (updatedData.refuelDateTime) updateObject.refuel_datetime = updatedData.refuelDateTime.toISOString();
+
+      const { error } = await supabase
+        .from('refuel_records')
+        .update(updateObject)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setRecords(prev => prev.map(record => 
+        record.id === id ? { ...record, ...updatedData } : record
+      ));
+      
+      toast({
+        title: "Record Updated",
+        description: "The refuel record has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error updating record:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update refuel record.",
       });
     }
   };
@@ -190,8 +239,6 @@ const Index = () => {
         title: "Record Removed",
         description: "The refuel record has been removed successfully.",
       });
-
-      await logActivity('delete', 'refuel_record', id, undefined, selectedBranchId);
     } catch (error) {
       console.error('Error removing record:', error);
       toast({
@@ -202,29 +249,36 @@ const Index = () => {
     }
   };
 
-  const addStaff = (name: string) => {
-    const newStaff: Staff = {
-      id: crypto.randomUUID(),
-      name,
-    };
-    setStaff(prev => [...prev, newStaff]);
-    toast({
-      title: "Staff Added",
-      description: `${name} has been added to the staff list.`,
-    });
-  };
+  const resetTable = async () => {
+    if (!selectedBranchId) return;
 
-  const removeStaff = (id: string) => {
-    const staffMember = staff.find(s => s.id === id);
-    setStaff(prev => prev.filter(s => s.id !== id));
-    toast({
-      title: "Staff Removed",
-      description: `${staffMember?.name} has been removed from the staff list.`,
-    });
+    try {
+      const { error } = await supabase
+        .from('refuel_records')
+        .delete()
+        .eq('branch_id', selectedBranchId)
+        .eq('is_temporary', true);
+
+      if (error) throw error;
+
+      setRecords([]);
+      setShowDateWarning(false);
+      
+      toast({
+        title: "Table Reset",
+        description: "All temporary refuel records have been cleared.",
+      });
+    } catch (error) {
+      console.error('Error resetting table:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to reset refuel table.",
+      });
+    }
   };
 
   const handleSignOut = async () => {
-    await logActivity('logout', 'auth', undefined, undefined, selectedBranchId);
     await signOut();
   };
 
@@ -264,6 +318,7 @@ const Index = () => {
                   onBranchChange={setSelectedBranchId}
                   className="w-48"
                 />
+                <PasswordChangeDialog />
                 {profile?.role === 'admin' && (
                   <Link to="/admin">
                     <Button variant="outline" size="sm">
@@ -314,6 +369,16 @@ const Index = () => {
           </Card>
         ) : (
           <>
+            {/* Date Warning Alert */}
+            {showDateWarning && (
+              <Alert className="border-amber-200 bg-amber-50">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  Warning: Some records are from a previous date. Consider resetting the table for today's data.
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-card p-6 rounded-lg shadow-md border border-primary/10">
@@ -359,20 +424,43 @@ const Index = () => {
               </div>
             </div>
 
+            {/* Reset Button */}
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                onClick={resetTable}
+                className="gap-2"
+                disabled={records.length === 0}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Reset Table
+              </Button>
+            </div>
+
             {/* Forms and Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <RefuelForm staff={staff} onAddRecord={addRecord} />
-                <RefuelTable records={records} onRemoveRecord={removeRecord} />
+                <RefuelTable 
+                  records={records} 
+                  onRemoveRecord={removeRecord}
+                  onUpdateRecord={updateRecord}
+                />
               </div>
               
               <div className="space-y-6">
                 <StaffManagement 
                   staff={staff} 
                   onAddStaff={addStaff} 
-                  onRemoveStaff={removeStaff} 
+                  onRemoveStaff={removeStaff}
+                  loading={staffLoading}
                 />
-                <PDFGenerator records={records} staff={staff} />
+                <PDFGenerator 
+                  records={records} 
+                  staff={staff}
+                  branchName={selectedBranchName}
+                  branchId={selectedBranchId}
+                />
               </div>
             </div>
           </>

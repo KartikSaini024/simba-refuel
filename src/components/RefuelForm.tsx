@@ -34,6 +34,7 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
       addedToRCM: formData.addedToRCM,
       amount: parseFloat(formData.amount),
       refuelledBy: formData.refuelledBy,
+      refuelDateTime: new Date(),
     });
 
     setFormData({

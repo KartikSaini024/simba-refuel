@@ -22,9 +22,10 @@ interface StaffManagementProps {
   staff: Staff[];
   onAddStaff: (name: string) => void;
   onRemoveStaff: (id: string) => void;
+  loading?: boolean;
 }
 
-export const StaffManagement = ({ staff, onAddStaff, onRemoveStaff }: StaffManagementProps) => {
+export const StaffManagement = ({ staff, onAddStaff, onRemoveStaff, loading }: StaffManagementProps) => {
   const [newStaffName, setNewStaffName] = useState('');
 
   const handleAddStaff = (e: React.FormEvent) => {

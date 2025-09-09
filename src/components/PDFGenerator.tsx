@@ -14,6 +14,8 @@ import simbaLogo from '@/assets/simba-logo-hd.png';
 interface PDFGeneratorProps {
   records: RefuelRecord[];
   staff: Staff[];
+  branchName?: string;
+  branchId?: string;
 }
 
 export const PDFGenerator = ({ records, staff }: PDFGeneratorProps) => {

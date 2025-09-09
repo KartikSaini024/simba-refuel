@@ -14,47 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      activity_logs: {
-        Row: {
-          action: string
-          branch_id: string | null
-          created_at: string | null
-          details: Json | null
-          id: string
-          resource_id: string | null
-          resource_type: string
-          user_id: string
-        }
-        Insert: {
-          action: string
-          branch_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          resource_id?: string | null
-          resource_type: string
-          user_id: string
-        }
-        Update: {
-          action?: string
-          branch_id?: string | null
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          resource_id?: string | null
-          resource_type?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activity_logs_branch_id_fkey"
-            columns: ["branch_id"]
-            isOneToOne: false
-            referencedRelation: "branches"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       branches: {
         Row: {
           code: string
@@ -140,6 +99,8 @@ export type Database = {
           created_at: string | null
           created_by: string
           id: string
+          is_temporary: boolean | null
+          refuel_datetime: string | null
           refuelled_by: string
           rego: string
           reservation_number: string
@@ -152,6 +113,8 @@ export type Database = {
           created_at?: string | null
           created_by: string
           id?: string
+          is_temporary?: boolean | null
+          refuel_datetime?: string | null
           refuelled_by: string
           rego: string
           reservation_number: string
@@ -164,6 +127,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           id?: string
+          is_temporary?: boolean | null
+          refuel_datetime?: string | null
           refuelled_by?: string
           rego?: string
           reservation_number?: string
@@ -172,6 +137,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "refuel_records_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_branch_id_fkey"
             columns: ["branch_id"]
             isOneToOne: false
             referencedRelation: "branches"
@@ -206,16 +203,6 @@ export type Database = {
       is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
-      }
-      log_activity: {
-        Args: {
-          p_action: string
-          p_branch_id?: string
-          p_details?: Json
-          p_resource_id?: string
-          p_resource_type: string
-        }
-        Returns: string
       }
     }
     Enums: {

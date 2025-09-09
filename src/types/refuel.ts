@@ -6,6 +6,8 @@ export interface RefuelRecord {
   amount: number;
   refuelledBy: string;
   createdAt: Date;
+  refuelDateTime: Date;
+  isTemporary?: boolean;
 }
 
 export interface Staff {
