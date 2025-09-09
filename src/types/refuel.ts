@@ -7,7 +7,7 @@ export interface RefuelRecord {
   refuelledBy: string;
   createdAt: Date;
   refuelDateTime: Date;
-  isTemporary?: boolean;
+  receiptPhotoUrl?: string;
 }
 
 export interface Staff {

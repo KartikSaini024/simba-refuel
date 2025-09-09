@@ -99,7 +99,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           id: string
-          is_temporary: boolean | null
+          receipt_photo_url: string | null
           refuel_datetime: string | null
           refuelled_by: string
           rego: string
@@ -113,7 +113,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           id?: string
-          is_temporary?: boolean | null
+          receipt_photo_url?: string | null
           refuel_datetime?: string | null
           refuelled_by: string
           rego: string
@@ -127,7 +127,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           id?: string
-          is_temporary?: boolean | null
+          receipt_photo_url?: string | null
           refuel_datetime?: string | null
           refuelled_by?: string
           rego?: string

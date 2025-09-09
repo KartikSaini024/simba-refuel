@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Plus } from 'lucide-react';
 import { RefuelRecord, Staff } from '@/types/refuel';
+import PhotoUpload from '@/components/PhotoUpload';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface RefuelFormProps {
   staff: Staff[];
@@ -14,6 +18,7 @@ interface RefuelFormProps {
 }
 
 export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
+  const { profile } = useAuthContext();
   const [formData, setFormData] = useState({
     reservationNumber: '',
     rego: '',
@@ -21,11 +26,67 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
     amount: '',
     refuelledBy: '',
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const compressImage = (file: File, quality: number = 0.7): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+
+      img.onload = () => {
+        const maxWidth = 1200;
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        const newWidth = img.width * ratio;
+        const newHeight = img.height * ratio;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          }
+        }, 'image/jpeg', quality);
+      };
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.reservationNumber || !formData.rego || !formData.amount || !formData.refuelledBy) {
       return;
+    }
+
+    let receiptPhotoUrl: string | undefined;
+
+    if (selectedFile) {
+      try {
+        const compressedFile = await compressImage(selectedFile);
+        const fileExt = 'jpg';
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        
+        const { data, error } = await supabase.storage
+          .from('refuel-receipts')
+          .upload(fileName, compressedFile);
+
+        if (error) throw error;
+        receiptPhotoUrl = data.path;
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        toast({
+          variant: "destructive",
+          title: "Upload Failed",
+          description: "Failed to upload photo. Record will be saved without image.",
+        });
+      }
     }
 
     onAddRecord({
@@ -35,6 +96,7 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
       amount: parseFloat(formData.amount),
       refuelledBy: formData.refuelledBy,
       refuelDateTime: new Date(),
+      receiptPhotoUrl,
     });
 
     setFormData({
@@ -44,6 +106,7 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
       amount: '',
       refuelledBy: '',
     });
+    setSelectedFile(null);
   };
 
   return (
@@ -109,6 +172,24 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          
+          <PhotoUpload
+            onPhotoSelected={setSelectedFile}
+            selectedFile={selectedFile}
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="createdBy">Created By</Label>
+            <Input
+              id="createdBy"
+              value={`${profile?.first_name || ''} ${profile?.last_name || ''}`.trim()}
+              disabled
+              className="bg-muted"
+            />
+            <p className="text-xs text-muted-foreground">
+              This field is automatically filled with your account information
+            </p>
           </div>
           
           <div className="flex items-center space-x-2">

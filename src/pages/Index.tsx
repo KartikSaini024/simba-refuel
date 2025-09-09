@@ -6,17 +6,22 @@ import { RefuelTable } from '@/components/RefuelTable';
 import { PDFGenerator } from '@/components/PDFGenerator';
 import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
 import BranchSelector from '@/components/BranchSelector';
+import { HeaderMenu } from '@/components/HeaderMenu';
+import EmailReportSender from '@/components/EmailReportSender';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RefuelRecord } from '@/types/refuel';
 import { DatabaseRefuelRecord } from '@/types/database';
-import { Fuel, Calendar, LogOut, Settings, User, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Fuel, Calendar, LogOut, Settings, User, AlertTriangle, CalendarIcon } from 'lucide-react';
 import { format, isToday } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useStaff } from '@/hooks/useStaff';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import simbaLogo from '@/assets/simba-logo-hd.png';
 
 const Index = () => {
@@ -28,6 +33,7 @@ const Index = () => {
   const [selectedBranchName, setSelectedBranchName] = useState<string>('');
   const [loadingData, setLoadingData] = useState(false);
   const [showDateWarning, setShowDateWarning] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { staff, loading: staffLoading, addStaff, removeStaff } = useStaff(selectedBranchId || undefined);
 
   // Redirect to auth if not logged in, not approved, or redirect admins to dashboard
@@ -44,7 +50,7 @@ const Index = () => {
     }
   }, [user, profile, loading, navigate, searchParams]);
 
-  // Load records when branch changes or handle URL branch parameter
+  // Load records when branch or date changes or handle URL branch parameter
   useEffect(() => {
     // Check for branch parameter in URL
     const branchParam = searchParams.get('branch');
@@ -60,7 +66,7 @@ const Index = () => {
       // Auto-select user's branch if they're staff and no URL param
       setSelectedBranchId(profile.branch_id);
     }
-  }, [selectedBranchId, user, profile, searchParams]);
+  }, [selectedBranchId, user, profile, searchParams, selectedDate]);
 
   // Check for date warnings when records change
   useEffect(() => {
@@ -89,16 +95,16 @@ const Index = () => {
 
     setLoadingData(true);
     try {
-      const today = format(new Date(), 'yyyy-MM-dd');
+      const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+      const isSelectedDateToday = isToday(selectedDate);
       
       const { data, error } = await supabase
         .from('refuel_records')
         .select('*')
         .eq('branch_id', selectedBranchId)
-        .eq('is_temporary', true)
-        .gte('created_at', `${today}T00:00:00`)
-        .lt('created_at', `${today}T23:59:59`)
-        .order('refuel_datetime', { ascending: false });
+        .gte('created_at', `${selectedDateStr}T00:00:00`)
+        .lt('created_at', `${selectedDateStr}T23:59:59`)
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -112,7 +118,7 @@ const Index = () => {
         refuelledBy: record.refuelled_by,
         createdAt: new Date(record.created_at),
         refuelDateTime: new Date(record.refuel_datetime),
-        isTemporary: record.is_temporary,
+        receiptPhotoUrl: record.receipt_photo_url,
       }));
 
       setRecords(convertedRecords);
@@ -129,7 +135,7 @@ const Index = () => {
   };
 
   const checkDateWarnings = () => {
-    const hasOldRecords = records.some(record => !isToday(record.refuelDateTime));
+    const hasOldRecords = !isToday(selectedDate);
     setShowDateWarning(hasOldRecords);
   };
 
@@ -147,8 +153,9 @@ const Index = () => {
           amount: recordData.amount,
           refuelled_by: recordData.refuelledBy,
           created_by: user.id,
-          is_temporary: true,
           refuel_datetime: recordData.refuelDateTime.toISOString(),
+          created_at: selectedDate.toISOString().split('T')[0] + 'T' + recordData.refuelDateTime.toISOString().split('T')[1],
+          receipt_photo_url: recordData.receiptPhotoUrl,
         })
         .select()
         .single();
@@ -165,7 +172,7 @@ const Index = () => {
         refuelledBy: data.refuelled_by,
         createdAt: new Date(data.created_at),
         refuelDateTime: new Date(data.refuel_datetime),
-        isTemporary: data.is_temporary,
+        receiptPhotoUrl: data.receipt_photo_url,
       };
 
       setRecords(prev => [newRecord, ...prev]);
@@ -195,7 +202,10 @@ const Index = () => {
       if (updatedData.addedToRCM !== undefined) updateObject.added_to_rcm = updatedData.addedToRCM;
       if (updatedData.amount !== undefined) updateObject.amount = updatedData.amount;
       if (updatedData.refuelledBy) updateObject.refuelled_by = updatedData.refuelledBy;
-      if (updatedData.refuelDateTime) updateObject.refuel_datetime = updatedData.refuelDateTime.toISOString();
+      if (updatedData.refuelDateTime) {
+        updateObject.refuel_datetime = updatedData.refuelDateTime.toISOString();
+        updateObject.created_at = selectedDate.toISOString().split('T')[0] + 'T' + updatedData.refuelDateTime.toISOString().split('T')[1];
+      }
 
       const { error } = await supabase
         .from('refuel_records')
@@ -249,34 +259,6 @@ const Index = () => {
     }
   };
 
-  const resetTable = async () => {
-    if (!selectedBranchId) return;
-
-    try {
-      const { error } = await supabase
-        .from('refuel_records')
-        .delete()
-        .eq('branch_id', selectedBranchId)
-        .eq('is_temporary', true);
-
-      if (error) throw error;
-
-      setRecords([]);
-      setShowDateWarning(false);
-      
-      toast({
-        title: "Table Reset",
-        description: "All temporary refuel records have been cleared.",
-      });
-    } catch (error) {
-      console.error('Error resetting table:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to reset refuel table.",
-      });
-    }
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -308,7 +290,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="hidden sm:flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
                 <span className="text-sm font-medium">{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
               </div>
@@ -318,19 +300,7 @@ const Index = () => {
                   onBranchChange={setSelectedBranchId}
                   className="w-48"
                 />
-                <PasswordChangeDialog />
-                {profile?.role === 'admin' && (
-                  <Link to="/admin">
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4 mr-1" />
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                <Button variant="outline" size="sm" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-1" />
-                  Sign Out
-                </Button>
+                <HeaderMenu profile={profile} onSignOut={handleSignOut} />
               </div>
             </div>
           </div>
@@ -374,10 +344,38 @@ const Index = () => {
               <Alert className="border-amber-200 bg-amber-50">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <AlertDescription className="text-amber-800">
-                  Warning: Some records are from a previous date. Consider resetting the table for today's data.
+                  You are viewing records from {format(selectedDate, 'MMMM d, yyyy')}. Switch to today's date to add new records.
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* Date Selector */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Refuel Records for {format(selectedDate, 'MMMM d, yyyy')}</h2>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-[240px] justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarComponent
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => date && setSelectedDate(date)}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -424,27 +422,17 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Reset Button */}
-            <div className="flex justify-end">
-              <Button 
-                variant="outline" 
-                onClick={resetTable}
-                className="gap-2"
-                disabled={records.length === 0}
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset Table
-              </Button>
-            </div>
 
             {/* Forms and Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <RefuelForm staff={staff} onAddRecord={addRecord} />
+                {isToday(selectedDate) && <RefuelForm staff={staff} onAddRecord={addRecord} />}
                 <RefuelTable 
                   records={records} 
                   onRemoveRecord={removeRecord}
-                  onUpdateRecord={updateRecord}
+                  onUpdateRecord={isToday(selectedDate) ? updateRecord : undefined}
+                  selectedDate={selectedDate}
+                  staff={staff}
                 />
               </div>
               
@@ -455,12 +443,19 @@ const Index = () => {
                   onRemoveStaff={removeStaff}
                   loading={staffLoading}
                 />
-                <PDFGenerator 
-                  records={records} 
-                  staff={staff}
-                  branchName={selectedBranchName}
-                  branchId={selectedBranchId}
-                />
+                <div className="space-y-4">
+                  <PDFGenerator 
+                    records={records} 
+                    staff={staff}
+                    branchName={selectedBranchName}
+                    branchId={selectedBranchId}
+                  />
+                  <EmailReportSender 
+                    records={records} 
+                    branchName={selectedBranchName}
+                    date={selectedDate}
+                  />
+                </div>
               </div>
             </div>
           </>
