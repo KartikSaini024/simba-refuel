@@ -16,11 +16,19 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const auth = useAuth();
+  console.log('AuthProvider rendering...');
   
-  return (
-    <AuthContext.Provider value={auth}>
-      {children}
-    </AuthContext.Provider>
-  );
+  try {
+    const auth = useAuth();
+    console.log('Auth hook returned:', { user: !!auth?.user, loading: auth?.loading });
+    
+    return (
+      <AuthContext.Provider value={auth}>
+        {children}
+      </AuthContext.Provider>
+    );
+  } catch (error) {
+    console.error('Error in AuthProvider:', error);
+    throw error;
+  }
 };

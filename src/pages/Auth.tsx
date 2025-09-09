@@ -15,10 +15,14 @@ import { Branch } from '@/types/database';
 import simbaLogo from '@/assets/simba-logo-hd.png';
 
 const Auth = () => {
+  console.log('Auth component rendering...');
+  
   const navigate = useNavigate();
   const { signUp, signIn, signOut, user, profile } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
+  
+  console.log('Auth state:', { user: !!user, profile: profile?.status, loading });
   
   // Sign up form state
   const [signUpData, setSignUpData] = useState({
@@ -38,8 +42,10 @@ const Auth = () => {
   });
 
   useEffect(() => {
+    console.log('Auth useEffect: checking user state', { user: !!user, profileStatus: profile?.status });
     // Redirect if already authenticated and approved
     if (user && profile?.status === 'approved') {
+      console.log('Redirecting to home page');
       navigate('/');
     }
   }, [user, profile, navigate]);
@@ -49,6 +55,7 @@ const Auth = () => {
   }, []);
 
   const fetchBranches = async () => {
+    console.log('Fetching branches...');
     try {
       const { data, error } = await supabase
         .from('branches')
@@ -61,6 +68,7 @@ const Auth = () => {
         return;
       }
       
+      console.log('Branches fetched:', data?.length || 0);
       setBranches(data || []);
     } catch (error) {
       console.error('Error fetching branches:', error);
@@ -138,7 +146,7 @@ const Auth = () => {
 
   if (user && profile?.status === 'pending') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <img src={simbaLogo} alt="Simba Car Hire" className="h-16 mx-auto mb-4" />
@@ -163,7 +171,7 @@ const Auth = () => {
 
   if (user && profile?.status === 'rejected') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <img src={simbaLogo} alt="Simba Car Hire" className="h-16 mx-auto mb-4" />
@@ -185,9 +193,10 @@ const Auth = () => {
       </div>
     );
   }
-
+  
+  console.log('Rendering Auth main form');
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <img src={simbaLogo} alt="Simba Car Hire" className="h-16 mx-auto mb-4" />

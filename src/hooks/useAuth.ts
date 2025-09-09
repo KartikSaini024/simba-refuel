@@ -22,11 +22,15 @@ export const useAuth = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
+  
+  console.log('useAuth hook initialized');
+  
   useEffect(() => {
+    console.log('useAuth useEffect: setting up auth listener');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, { userId: session?.user?.id });
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -43,6 +47,7 @@ export const useAuth = () => {
     );
 
     // Check for existing session
+    console.log('Checking for existing session...');
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);

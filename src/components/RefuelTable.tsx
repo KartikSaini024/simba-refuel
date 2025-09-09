@@ -6,9 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Trash2, FileText, Edit2, Check, X } from 'lucide-react';
-import { RefuelRecord } from '@/types/refuel';
-import { format } from 'date-fns';
+import { Trash2, FileText, Edit2, Check, X, Image } from 'lucide-react';
+import { RefuelRecord, Staff } from '@/types/refuel';
+import { format, isToday } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,16 +20,27 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RefuelTableProps {
   records: RefuelRecord[];
   onRemoveRecord: (id: string) => void;
   onUpdateRecord?: (id: string, updatedData: Partial<RefuelRecord>) => void;
+  selectedDate?: Date;
+  staff?: Staff[];
 }
 
-export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelTableProps) => {
+export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord, selectedDate = new Date(), staff = [] }: RefuelTableProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<RefuelRecord>>({});
+  const [editingPhoto, setEditingPhoto] = useState<File | null>(null);
   const totalAmount = records.reduce((sum, record) => sum + record.amount, 0);
 
   const startEditing = (record: RefuelRecord) => {
@@ -39,20 +50,76 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
       rego: record.rego,
       amount: record.amount,
       addedToRCM: record.addedToRCM,
+      refuelledBy: record.refuelledBy,
+      receiptPhotoUrl: record.receiptPhotoUrl,
+    });
+    setEditingPhoto(null);
+  };
+
+  const compressImage = (file: File, quality: number = 0.7): Promise<File> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new window.Image();
+
+      img.onload = () => {
+        const maxWidth = 1200;
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        const newWidth = img.width * ratio;
+        const newHeight = img.height * ratio;
+
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          }
+        }, 'image/jpeg', quality);
+      };
+
+      img.src = URL.createObjectURL(file);
     });
   };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (editingId && onUpdateRecord) {
-      onUpdateRecord(editingId, editData);
+      let finalEditData = { ...editData };
+      
+      // Handle photo upload if new photo selected
+      if (editingPhoto) {
+        try {
+          const compressedFile = await compressImage(editingPhoto);
+          const fileExt = 'jpg';
+          const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+          
+          const { data, error } = await supabase.storage
+            .from('refuel-receipts')
+            .upload(fileName, compressedFile);
+
+          if (error) throw error;
+          finalEditData.receiptPhotoUrl = data.path;
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+        }
+      }
+      
+      onUpdateRecord(editingId, finalEditData);
       setEditingId(null);
       setEditData({});
+      setEditingPhoto(null);
     }
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditData({});
+    setEditingPhoto(null);
   };
 
   if (records.length === 0) {
@@ -61,7 +128,7 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-primary">
             <FileText className="h-5 w-5" />
-            Today's Refuel Records
+            {isToday(selectedDate) ? "Today's Refuel Records" : `${format(selectedDate, 'MMM d, yyyy')}'s Refuel Records`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -78,7 +145,7 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-primary">
           <FileText className="h-5 w-5" />
-          Today's Refuel Records ({records.length})
+          {isToday(selectedDate) ? "Today's Refuel Records" : `${format(selectedDate, 'MMM d, yyyy')}'s Refuel Records`} ({records.length})
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -92,6 +159,7 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Refuelled By</TableHead>
                 <TableHead>Date & Time</TableHead>
+                <TableHead>Receipt</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -147,12 +215,100 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
                       `$${record.amount.toFixed(2)}`
                     )}
                   </TableCell>
-                  <TableCell>{record.refuelledBy}</TableCell>
+                  <TableCell>
+                    {editingId === record.id ? (
+                      <Select
+                        value={editData.refuelledBy || ''}
+                        onValueChange={(value) => setEditData({ ...editData, refuelledBy: value })}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select staff member" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-card z-50">
+                          {staff.map((member) => (
+                            <SelectItem key={member.id} value={member.name}>
+                              {member.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      record.refuelledBy
+                    )}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     <div className="space-y-1">
                       <div>{format(record.refuelDateTime, 'MMM d, yyyy')}</div>
                       <div className="text-xs">{format(record.refuelDateTime, 'HH:mm')}</div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {editingId === record.id ? (
+                      <div className="space-y-2">
+                        {(editData.receiptPhotoUrl || editingPhoto) && (
+                          <div className="relative w-16 h-16">
+                            <img
+                              src={editingPhoto ? URL.createObjectURL(editingPhoto) : 
+                                   editData.receiptPhotoUrl ? supabase.storage.from('refuel-receipts').getPublicUrl(editData.receiptPhotoUrl).data.publicUrl : ''}
+                              alt="Receipt preview"
+                              className="w-16 h-16 object-cover rounded border"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                              onClick={() => {
+                                setEditData({ ...editData, receiptPhotoUrl: undefined });
+                                setEditingPhoto(null);
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) setEditingPhoto(file);
+                          }}
+                          className="text-xs"
+                        />
+                      </div>
+                    ) : (
+                      record.receiptPhotoUrl ? (
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Image className="h-4 w-4 text-success" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>Receipt for {record.rego}</DialogTitle>
+                            </DialogHeader>
+                            <div className="flex justify-center">
+                              <img
+                                src={supabase.storage.from('refuel-receipts').getPublicUrl(record.receiptPhotoUrl).data.publicUrl}
+                                alt={`Receipt for ${record.rego}`}
+                                className="max-w-full max-h-96 object-contain rounded-md"
+                                onError={(e) => {
+                                  console.error('Image failed to load:', record.receiptPhotoUrl);
+                                  e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTkgOUg3VjdIOVY5WiIgZmlsbD0iIzk5OTk5OSIvPgo8cGF0aCBkPSJNMjEgNUgzQzEuOSA1IDEgNS45IDEgN1YxN0MxIDE4LjEgMS45IDE5IDMgMTlIMjFDMjIuMSAxOSAyMyAxOC4xIDIzIDE3VjdDMjMgNS45IDIyLjEgNSAyMSA1Wk0yMSAxN0gzVjlIMjFWMTdaIiBmaWxsPSIjOTk5OTk5Ii8+CjxwYXRoIGQ9Ik0xNi41IDEyTDE0IDkuNUwxMSAxMi41TDkgMTAuNUw3IDE0SDE3TDE2LjUgMTJaIiBmaWxsPSIjOTk5OTk5Ii8+Cjwvc3ZnPgo=';
+                                }}
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      ) : (
+                        <span className="text-muted-foreground text-xs">No receipt</span>
+                      )
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -224,7 +380,7 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord }: RefuelT
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell colSpan={3}>Total</TableCell>
                 <TableCell className="text-right">${totalAmount.toFixed(2)}</TableCell>
-                <TableCell colSpan={3}></TableCell>
+                <TableCell colSpan={4}></TableCell>
               </TableRow>
             </TableBody>
           </Table>

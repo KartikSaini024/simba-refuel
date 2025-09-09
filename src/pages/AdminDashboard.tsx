@@ -7,15 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3 } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3, Image } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LoadingSpinner, InlineLoader } from '@/components/LoadingSpinner';
 import { EmptyState } from '@/components/EmptyState';
 import { handleError } from '@/utils/errorHandling';
 import { Profile, Branch } from '@/types/database';
+import { RefuelStatistics } from '@/components/RefuelStatistics';
+import RefuelRecordSearch from '@/components/RefuelRecordSearch';
+import { format } from 'date-fns';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -24,6 +28,7 @@ const AdminDashboard = () => {
   const [allUsers, setAllUsers] = useState<Profile[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [newBranch, setNewBranch] = useState({ code: '', name: '', location: '' });
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [loading, setLoading] = useState({
     pendingUsers: true,
     allUsers: true,
@@ -248,9 +253,10 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="branches">Branch Management</TabsTrigger>
+          <TabsTrigger value="statistics">Statistics</TabsTrigger>
           <TabsTrigger value="refuel">Branch Operations</TabsTrigger>
         </TabsList>
 
@@ -529,6 +535,8 @@ const AdminDashboard = () => {
         </TabsContent>
 
         <TabsContent value="refuel" className="space-y-6">
+          <RefuelRecordSearch branches={branches} />
+          
           <Card>
             <CardHeader>
               <CardTitle>Branch Operations</CardTitle>
@@ -564,6 +572,10 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <RefuelStatistics branches={branches} />
         </TabsContent>
       </Tabs>
     </div>
