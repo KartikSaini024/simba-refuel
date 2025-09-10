@@ -102,8 +102,8 @@ const Index = () => {
         .from('refuel_records')
         .select('*')
         .eq('branch_id', selectedBranchId)
-        .gte('created_at', `${selectedDateStr}T00:00:00`)
-        .lt('created_at', `${selectedDateStr}T23:59:59`)
+        .gte('refuel_datetime', `${selectedDateStr}T00:00:00`)
+        .lt('refuel_datetime', `${selectedDateStr}T23:59:59`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -154,7 +154,7 @@ const Index = () => {
           refuelled_by: recordData.refuelledBy,
           created_by: user.id,
           refuel_datetime: recordData.refuelDateTime.toISOString(),
-          created_at: selectedDate.toISOString().split('T')[0] + 'T' + recordData.refuelDateTime.toISOString().split('T')[1],
+          created_at: new Date().toISOString(),
           receipt_photo_url: recordData.receiptPhotoUrl,
         })
         .select()
@@ -204,8 +204,8 @@ const Index = () => {
       if (updatedData.refuelledBy) updateObject.refuelled_by = updatedData.refuelledBy;
       if (updatedData.refuelDateTime) {
         updateObject.refuel_datetime = updatedData.refuelDateTime.toISOString();
-        updateObject.created_at = selectedDate.toISOString().split('T')[0] + 'T' + updatedData.refuelDateTime.toISOString().split('T')[1];
       }
+      if (updatedData.receiptPhotoUrl !== undefined) updateObject.receipt_photo_url = updatedData.receiptPhotoUrl;
 
       const { error } = await supabase
         .from('refuel_records')

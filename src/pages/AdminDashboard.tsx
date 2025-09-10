@@ -215,6 +215,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const updateUserStatus = async (userId: string, newStatus: 'pending' | 'approved' | 'rejected') => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: newStatus })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Status updated",
+        description: `User status has been updated to ${newStatus}.`,
+      });
+
+      fetchPendingUsers();
+      fetchAllUsers();
+    } catch (error) {
+      handleError(error, 'Failed to update user status');
+    }
+  };
+
   const updateUserBranch = async (userId: string, branchId: string | null) => {
     try {
       const { error } = await supabase
@@ -393,34 +414,24 @@ const AdminDashboard = () => {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            variant={
-                              user.status === 'approved' ? 'default' :
-                              user.status === 'rejected' ? 'destructive' : 'secondary'
-                            }
+                          <Select
+                            value={user.status}
+                            onValueChange={(value: 'pending' | 'approved' | 'rejected') => updateUserStatus(user.user_id, value)}
                           >
-                            {user.status}
-                          </Badge>
+                            <SelectTrigger className="w-32">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="approved">Approved</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
-                          {user.status === 'pending' && (
-                            <div className="space-x-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => approveUser(user.user_id)}
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => rejectUser(user.user_id)}
-                              >
-                                Reject
-                              </Button>
-                            </div>
-                          )}
+                          <div className="text-xs text-muted-foreground">
+                            Use status dropdown to manage user access
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

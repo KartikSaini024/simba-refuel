@@ -88,13 +88,24 @@ export const useAuth = () => {
           data: {
             first_name: firstName,
             last_name: lastName,
-            branch_code: branchCode, // Single branch code instead of array
-            role: requestedRole
+            branch_code: branchCode,
+            role: requestedRole,
+            // Force all users to pending status initially
+            status: 'pending'
           }
         }
       });
 
       if (error) throw error;
+
+      // If user is immediately signed in (email confirmation disabled), sign them out
+      // so they can't access the system until approved
+      if (data.user && data.session) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+      }
 
       toast({
         title: "Account created successfully!",

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Camera, Upload, X, FileImage } from 'lucide-react';
+import { Camera, Upload, X, FileImage, RotateCcw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -23,23 +23,42 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      });
+      // Check if we're in a secure context (HTTPS)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera access requires a secure connection (HTTPS)');
+      }
+      
+      const constraints = { 
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        } 
+      };
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setShowCamera(true);
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to load
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current?.play();
+        };
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unable to access camera. Please check permissions.';
       toast({
         variant: "destructive",
         title: "Camera Error",
-        description: "Unable to access camera. Please check permissions.",
+        description: errorMessage.includes('secure') ? 
+          'Camera requires HTTPS. Please use file upload instead.' : 
+          'Unable to access camera. Please check permissions or use file upload.',
       });
     }
   };
@@ -50,6 +69,12 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
       setStream(null);
     }
     setShowCamera(false);
+  };
+
+  const flipCamera = async () => {
+    stopCamera();
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    setTimeout(() => startCamera(), 100);
   };
 
   const capturePhoto = () => {
@@ -120,6 +145,15 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
                 <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={flipCamera}
+                  className="bg-black/50 text-white border-white/30 hover:bg-black/70"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
                   onClick={capturePhoto}
                   className="bg-primary hover:bg-primary/90"
                 >
@@ -130,6 +164,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
                   type="button"
                   variant="outline"
                   onClick={stopCamera}
+                  className="bg-black/50 text-white border-white/30 hover:bg-black/70"
                 >
                   Cancel
                 </Button>
