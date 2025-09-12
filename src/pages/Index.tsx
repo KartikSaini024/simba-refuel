@@ -32,7 +32,6 @@ const Index = () => {
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedBranchName, setSelectedBranchName] = useState<string>('');
   const [loadingData, setLoadingData] = useState(false);
-  const [showDateWarning, setShowDateWarning] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { staff, loading: staffLoading, addStaff, removeStaff } = useStaff(selectedBranchId || undefined);
 
@@ -68,10 +67,7 @@ const Index = () => {
     }
   }, [selectedBranchId, user, profile, searchParams, selectedDate]);
 
-  // Check for date warnings when records change
-  useEffect(() => {
-    checkDateWarnings();
-  }, [records]);
+  // Remove date warnings since editing is now allowed for all dates
 
   const loadBranchInfo = async () => {
     if (!selectedBranchId) return;
@@ -134,10 +130,7 @@ const Index = () => {
     }
   };
 
-  const checkDateWarnings = () => {
-    const hasOldRecords = !isToday(selectedDate);
-    setShowDateWarning(hasOldRecords);
-  };
+  // Removed date warning function - editing is now allowed for all dates
 
   const addRecord = async (recordData: Omit<RefuelRecord, 'id' | 'createdAt'>) => {
     if (!selectedBranchId || !user) return;
@@ -339,15 +332,7 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            {/* Date Warning Alert */}
-            {showDateWarning && (
-              <Alert className="border-amber-200 bg-amber-50">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <AlertDescription className="text-amber-800">
-                  You are viewing records from {format(selectedDate, 'MMMM d, yyyy')}. Switch to today's date to add new records.
-                </AlertDescription>
-              </Alert>
-            )}
+            {/* Date warning removed - editing is now allowed for all dates */}
 
             {/* Date Selector */}
             <div className="flex justify-between items-center">
@@ -426,11 +411,11 @@ const Index = () => {
             {/* Forms and Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                {isToday(selectedDate) && <RefuelForm staff={staff} onAddRecord={addRecord} />}
+                <RefuelForm staff={staff} onAddRecord={addRecord} selectedDate={selectedDate} />
                 <RefuelTable 
                   records={records} 
                   onRemoveRecord={removeRecord}
-                  onUpdateRecord={isToday(selectedDate) ? updateRecord : undefined}
+                  onUpdateRecord={updateRecord}
                   selectedDate={selectedDate}
                   staff={staff}
                 />

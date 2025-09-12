@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3, Image } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3, Image, Settings } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LoadingSpinner, InlineLoader } from '@/components/LoadingSpinner';
@@ -19,6 +19,7 @@ import { handleError } from '@/utils/errorHandling';
 import { Profile, Branch } from '@/types/database';
 import { RefuelStatistics } from '@/components/RefuelStatistics';
 import RefuelRecordSearch from '@/components/RefuelRecordSearch';
+import { UserBranchManagement } from '@/components/UserBranchManagement';
 import { format } from 'date-fns';
 
 const AdminDashboard = () => {
@@ -29,6 +30,7 @@ const AdminDashboard = () => {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [newBranch, setNewBranch] = useState({ code: '', name: '', location: '' });
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
+  const [selectedUserForBranchManagement, setSelectedUserForBranchManagement] = useState<Profile | null>(null);
   const [loading, setLoading] = useState({
     pendingUsers: true,
     allUsers: true,
@@ -429,9 +431,14 @@ const AdminDashboard = () => {
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <div className="text-xs text-muted-foreground">
-                            Use status dropdown to manage user access
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedUserForBranchManagement(user)}
+                          >
+                            <Settings className="h-4 w-4 mr-1" />
+                            Manage Branches
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -589,6 +596,24 @@ const AdminDashboard = () => {
           <RefuelStatistics branches={branches} />
         </TabsContent>
       </Tabs>
+
+      {/* User Branch Management Dialog */}
+      <Dialog open={!!selectedUserForBranchManagement} onOpenChange={() => setSelectedUserForBranchManagement(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Branch Access Management
+            </DialogTitle>
+          </DialogHeader>
+          {selectedUserForBranchManagement && (
+            <UserBranchManagement 
+              userId={selectedUserForBranchManagement.user_id}
+              userEmail={selectedUserForBranchManagement.email}
+              onClose={() => setSelectedUserForBranchManagement(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
