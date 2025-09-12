@@ -5,19 +5,24 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus } from 'lucide-react';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, CalendarIcon } from 'lucide-react';
 import { RefuelRecord, Staff } from '@/types/refuel';
 import PhotoUpload from '@/components/PhotoUpload';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface RefuelFormProps {
   staff: Staff[];
   onAddRecord: (record: Omit<RefuelRecord, 'id' | 'createdAt'>) => void;
+  selectedDate?: Date;
 }
 
-export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
+export const RefuelForm = ({ staff, onAddRecord, selectedDate = new Date() }: RefuelFormProps) => {
   const { profile } = useAuthContext();
   const [formData, setFormData] = useState({
     reservationNumber: '',
@@ -27,6 +32,7 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
     refuelledBy: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [refuelDateTime, setRefuelDateTime] = useState<Date>(selectedDate);
 
   const compressImage = (file: File, quality: number = 0.7): Promise<File> => {
     return new Promise((resolve) => {
@@ -95,7 +101,7 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
       addedToRCM: formData.addedToRCM,
       amount: parseFloat(formData.amount),
       refuelledBy: formData.refuelledBy,
-      refuelDateTime: new Date(),
+      refuelDateTime: refuelDateTime,
       receiptPhotoUrl,
     });
 
@@ -172,6 +178,55 @@ export const RefuelForm = ({ staff, onAddRecord }: RefuelFormProps) => {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="refuelDateTime">Refuel Date & Time</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !refuelDateTime && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {refuelDateTime ? format(refuelDateTime, "PPP 'at' p") : <span>Pick a date and time</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={refuelDateTime}
+                  onSelect={(date) => {
+                    if (date) {
+                      // Preserve the current time when selecting a new date
+                      const newDateTime = new Date(date);
+                      newDateTime.setHours(refuelDateTime.getHours());
+                      newDateTime.setMinutes(refuelDateTime.getMinutes());
+                      setRefuelDateTime(newDateTime);
+                    }
+                  }}
+                  initialFocus
+                />
+                <div className="p-3 border-t">
+                  <Label htmlFor="timeInput" className="text-sm font-medium">Time</Label>
+                  <Input
+                    id="timeInput"
+                    type="time"
+                    value={format(refuelDateTime, 'HH:mm')}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':');
+                      const newDateTime = new Date(refuelDateTime);
+                      newDateTime.setHours(parseInt(hours), parseInt(minutes));
+                      setRefuelDateTime(newDateTime);
+                    }}
+                    className="mt-1"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           
           <PhotoUpload
