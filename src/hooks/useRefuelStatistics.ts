@@ -47,10 +47,10 @@ export const useRefuelStatistics = () => {
         ;
 
       if (filters.startDate) {
-        query = query.gte('refuel_datetime', filters.startDate.toISOString());
+        query = query.gte('created_at', filters.startDate.toISOString());
       }
       if (filters.endDate) {
-        query = query.lte('refuel_datetime', filters.endDate.toISOString());
+        query = query.lte('created_at', filters.endDate.toISOString());
       }
       if (filters.branchId) {
         query = query.eq('branch_id', filters.branchId);
@@ -85,7 +85,7 @@ export const useRefuelStatistics = () => {
       // Group by date
       const dateMap = new Map();
       records.forEach(record => {
-        const date = record.refuel_datetime.split('T')[0];
+        const date = record.created_at.split('T')[0];
         if (!dateMap.has(date)) {
           dateMap.set(date, {
             date,
@@ -134,16 +134,16 @@ export const useRefuelStatistics = () => {
         query = query.ilike('rego', `%${filters.rego}%`);
       }
       if (filters.startDate) {
-        query = query.gte('refuel_datetime', filters.startDate.toISOString());
+        query = query.gte('created_at', filters.startDate.toISOString());
       }
       if (filters.endDate) {
-        query = query.lte('refuel_datetime', filters.endDate.toISOString());
+        query = query.lte('created_at', filters.endDate.toISOString());
       }
       if (filters.branchId) {
         query = query.eq('branch_id', filters.branchId);
       }
 
-      query = query.order('refuel_datetime', { ascending: false });
+      query = query.order('created_at', { ascending: false });
 
       const { data, error } = await query;
       if (error) throw error;

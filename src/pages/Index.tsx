@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { RefuelForm } from '@/components/RefuelForm';
+import RefuelForm from '@/components/RefuelForm';
 import { StaffManagement } from '@/components/StaffManagement';
 import { RefuelTable } from '@/components/RefuelTable';
 import { PDFGenerator } from '@/components/PDFGenerator';
@@ -13,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { RefuelRecord } from '@/types/refuel';
+import { RefuelRecord, RefuelFormData, RefuelRecordUpdate } from '@/types/refuel';
 import { DatabaseRefuelRecord } from '@/types/database';
 import { Fuel, Calendar, LogOut, Settings, User, AlertTriangle, CalendarIcon } from 'lucide-react';
 import { format, isToday } from 'date-fns';
@@ -67,8 +67,6 @@ const Index = () => {
     }
   }, [selectedBranchId, user, profile, searchParams, selectedDate]);
 
-  // Remove date warnings since editing is now allowed for all dates
-
   const loadBranchInfo = async () => {
     if (!selectedBranchId) return;
 
@@ -92,32 +90,29 @@ const Index = () => {
     setLoadingData(true);
     try {
       const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-      const isSelectedDateToday = isToday(selectedDate);
       
       const { data, error } = await supabase
         .from('refuel_records')
         .select('*')
         .eq('branch_id', selectedBranchId)
-        .gte('refuel_datetime', `${selectedDateStr}T00:00:00`)
-        .lt('refuel_datetime', `${selectedDateStr}T23:59:59`)
+        .gte('created_at', `${selectedDateStr}T00:00:00`)
+        .lt('created_at', `${selectedDateStr}T23:59:59`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Convert database records to frontend format
-      const convertedRecords = (data || []).map((record: DatabaseRefuelRecord) => ({
+      const transformedRecords: RefuelRecord[] = (data || []).map(record => ({
         id: record.id,
-        reservationNumber: record.reservation_number,
         rego: record.rego,
-        addedToRCM: record.added_to_rcm,
-        amount: Number(record.amount),
+        amount: record.amount,
         refuelledBy: record.refuelled_by,
+        reservationNumber: record.reservation_number,
+        addedToRCM: record.added_to_rcm,
         createdAt: new Date(record.created_at),
-        refuelDateTime: new Date(record.refuel_datetime),
         receiptPhotoUrl: record.receipt_photo_url,
       }));
 
-      setRecords(convertedRecords);
+      setRecords(transformedRecords);
     } catch (error) {
       console.error('Error loading records:', error);
       toast({
@@ -130,23 +125,19 @@ const Index = () => {
     }
   };
 
-  // Removed date warning function - editing is now allowed for all dates
-
-  const addRecord = async (recordData: Omit<RefuelRecord, 'id' | 'createdAt'>) => {
+  const addRecord = async (recordData: RefuelFormData) => {
     if (!selectedBranchId || !user) return;
 
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('refuel_records')
         .insert({
           branch_id: selectedBranchId,
+          rego: recordData.rego.toUpperCase(),
+          amount: parseFloat(recordData.amount),
           reservation_number: recordData.reservationNumber,
-          rego: recordData.rego,
-          added_to_rcm: recordData.addedToRCM,
-          amount: recordData.amount,
           refuelled_by: recordData.refuelledBy,
           created_by: user.id,
-          refuel_datetime: recordData.refuelDateTime.toISOString(),
           created_at: new Date().toISOString(),
           receipt_photo_url: recordData.receiptPhotoUrl,
         })
@@ -155,20 +146,8 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Add to local state
-      const newRecord: RefuelRecord = {
-        id: data.id,
-        reservationNumber: data.reservation_number,
-        rego: data.rego,
-        addedToRCM: data.added_to_rcm,
-        amount: Number(data.amount),
-        refuelledBy: data.refuelled_by,
-        createdAt: new Date(data.created_at),
-        refuelDateTime: new Date(data.refuel_datetime),
-        receiptPhotoUrl: data.receipt_photo_url,
-      };
-
-      setRecords(prev => [newRecord, ...prev]);
+      // Reload records to reflect the new addition
+      await loadBranchRecords();
       
       toast({
         title: "Record Added",
@@ -184,19 +163,18 @@ const Index = () => {
     }
   };
 
-  const updateRecord = async (id: string, updatedData: Partial<RefuelRecord>) => {
+  const updateRecord = async (id: string, updatedData: RefuelRecordUpdate) => {
     if (!selectedBranchId) return;
 
     try {
       const updateObject: any = {};
       
+      if (updatedData.rego) updateObject.rego = updatedData.rego.toUpperCase();
+      if (updatedData.amount) updateObject.amount = updatedData.amount;
       if (updatedData.reservationNumber) updateObject.reservation_number = updatedData.reservationNumber;
-      if (updatedData.rego) updateObject.rego = updatedData.rego;
-      if (updatedData.addedToRCM !== undefined) updateObject.added_to_rcm = updatedData.addedToRCM;
-      if (updatedData.amount !== undefined) updateObject.amount = updatedData.amount;
       if (updatedData.refuelledBy) updateObject.refuelled_by = updatedData.refuelledBy;
-      if (updatedData.refuelDateTime) {
-        updateObject.refuel_datetime = updatedData.refuelDateTime.toISOString();
+      if (updatedData.createdAt) {
+        updateObject.created_at = updatedData.createdAt.toISOString();
       }
       if (updatedData.receiptPhotoUrl !== undefined) updateObject.receipt_photo_url = updatedData.receiptPhotoUrl;
 
@@ -251,7 +229,6 @@ const Index = () => {
       });
     }
   };
-
 
   const handleSignOut = async () => {
     await signOut();
@@ -332,8 +309,6 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            {/* Date warning removed - editing is now allowed for all dates */}
-
             {/* Date Selector */}
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Refuel Records for {format(selectedDate, 'MMMM d, yyyy')}</h2>
@@ -407,11 +382,13 @@ const Index = () => {
               </div>
             </div>
 
-
             {/* Forms and Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <RefuelForm staff={staff} onAddRecord={addRecord} selectedDate={selectedDate} />
+                <RefuelForm 
+                  onSubmit={addRecord} 
+                  staffMembers={staff} 
+                />
                 <RefuelTable 
                   records={records} 
                   onRemoveRecord={removeRecord}
