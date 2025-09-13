@@ -47,8 +47,8 @@ export const useUserBranches = () => {
     if (!profile) return;
 
     try {
+      // Super admin can access all branches if no primary branch is set
       if (profile.role === 'admin' && !profile.branch_id) {
-        // Super admin can access all branches
         const { data, error } = await supabase
           .from('branches')
           .select('*')
@@ -57,20 +57,43 @@ export const useUserBranches = () => {
 
         if (error) throw error;
         setAccessibleBranches(data || []);
-      } else if (profile.branch_id) {
-        // For now, users can only access their primary branch until the new table is created
-        const { data, error } = await supabase
-          .from('branches')
-          .select('*')
-          .eq('id', profile.branch_id)
-          .eq('is_active', true)
-          .order('name');
-
-        if (error) throw error;
-        setAccessibleBranches(data || []);
-      } else {
-        setAccessibleBranches([]);
+        return;
       }
+
+      // Collect branch ids from user_branch_access + include primary branch if present
+      const userId = (profile as any).user_id || profile.id;
+
+      let accessRows: any[] | null = null;
+      try {
+        const { data, error } = await (supabase as any)
+          .from('user_branch_access')
+          .select('branch_id')
+          .eq('user_id', userId);
+        if (error) throw error;
+        accessRows = data || [];
+      } catch (err) {
+        console.warn('user_branch_access lookup failed or table missing, falling back to primary branch only:', err);
+        accessRows = [];
+      }
+
+      const branchIds = new Set<string>();
+      if (profile.branch_id) branchIds.add(profile.branch_id);
+      (accessRows || []).forEach((r) => r?.branch_id && branchIds.add(r.branch_id));
+
+      if (branchIds.size === 0) {
+        setAccessibleBranches([]);
+        return;
+      }
+
+      const { data: branches, error: branchesError } = await supabase
+        .from('branches')
+        .select('*')
+        .in('id', Array.from(branchIds) as string[])
+        .eq('is_active', true)
+        .order('name');
+
+      if (branchesError) throw branchesError;
+      setAccessibleBranches(branches || []);
     } catch (error) {
       console.error('Error fetching accessible branches:', error);
       toast({
@@ -81,34 +104,92 @@ export const useUserBranches = () => {
     }
   };
 
-  // Fetch user's branch access records (for admin management)
   const fetchUserBranchAccess = async (userId?: string) => {
     if (profile?.role !== 'admin') return;
+    try {
+      const targetUserId = userId || (profile as any).user_id || profile.id;
+      const { data: accessRows, error } = await (supabase as any)
+        .from('user_branch_access')
+        .select('id, user_id, branch_id, created_at')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
 
-    // For now, return empty array until the new table is created
-    setUserBranchAccess([]);
+      const ids = Array.from(new Set((accessRows || []).map((r: any) => r.branch_id).filter(Boolean))) as string[];
+      let branchesById: Record<string, Branch> = {};
+      if (ids.length) {
+        const { data: branches, error: bErr } = await supabase
+          .from('branches')
+          .select('*')
+          .in('id', ids as string[]);
+        if (bErr) throw bErr;
+        branchesById = Object.fromEntries((branches || []).map((b: any) => [b.id, b]));
+      }
+
+      setUserBranchAccess(
+        (accessRows || []).map((r: any) => ({
+          id: r.id,
+          user_id: r.user_id,
+          branch_id: r.branch_id,
+          created_at: r.created_at,
+          branch: branchesById[r.branch_id],
+        }))
+      );
+    } catch (error) {
+      console.error('Error fetching user branch access:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load user branch access.',
+      });
+    }
   };
 
-  // Add branch access for a user
   const addBranchAccess = async (userId: string, branchId: string) => {
-    // For now, return false until the new table is created
-    toast({
-      variant: "destructive",
-      title: "Feature Coming Soon",
-      description: "Multiple branch access will be available after database migration.",
-    });
-    return false;
+    try {
+      const { data, error } = await (supabase as any)
+        .from('user_branch_access')
+        .insert([{ user_id: userId, branch_id: branchId }])
+        .select()
+        .single();
+      if (error) throw error;
+
+      toast({ title: 'Access added', description: 'User can now access the branch.' });
+      await fetchUserBranchAccess(userId);
+      await fetchAccessibleBranches();
+      return true;
+    } catch (error: any) {
+      console.error('Error adding branch access:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to add access',
+        description: error?.message || 'Please check RLS policies.',
+      });
+      return false;
+    }
   };
 
-  // Remove branch access for a user
   const removeBranchAccess = async (accessId: string, userId?: string) => {
-    // For now, return false until the new table is created
-    toast({
-      variant: "destructive",
-      title: "Feature Coming Soon",
-      description: "Multiple branch access will be available after database migration.",
-    });
-    return false;
+    try {
+      const { error } = await (supabase as any)
+        .from('user_branch_access')
+        .delete()
+        .eq('id', accessId);
+      if (error) throw error;
+
+      toast({ title: 'Access removed' });
+      if (userId) await fetchUserBranchAccess(userId);
+      await fetchAccessibleBranches();
+      return true;
+    } catch (error: any) {
+      console.error('Error removing branch access:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Failed to remove access',
+        description: error?.message || 'Please check RLS policies.',
+      });
+      return false;
+    }
   };
 
   useEffect(() => {

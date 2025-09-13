@@ -9,7 +9,6 @@ export interface DatabaseRefuelRecord {
   created_by: string;
   created_at: string;
   updated_at: string;
-  refuel_datetime: string;
   receipt_photo_url?: string;
 }
 

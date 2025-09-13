@@ -13,7 +13,8 @@ import { CalendarIcon, BarChart3, TrendingUp, Calendar as CalendarIconAlt } from
 import { format, subDays, subWeeks, subMonths } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Branch } from '@/types/database';
-
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 interface RefuelStatisticsProps {
   branches: Branch[];
 }
@@ -240,6 +241,29 @@ export const RefuelStatistics = ({ branches }: RefuelStatisticsProps) => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {statistics && statistics.dailyTotals.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Refuel Cost Trend</CardTitle>
+            <CardDescription>Daily total amount</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{ amount: { label: 'Total Amount', color: 'hsl(var(--primary))' } }}
+              className="w-full"
+            >
+              <LineChart data={statistics.dailyTotals.slice().reverse().map((d) => ({ date: d.date, amount: d.totalAmount }))}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" tickFormatter={(v) => format(new Date(v), 'MMM d')} />
+                <YAxis />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Line type="monotone" dataKey="amount" stroke="var(--color-amount)" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
       )}
 
       {/* Branch Breakdown */}

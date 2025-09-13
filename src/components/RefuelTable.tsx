@@ -52,6 +52,7 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord, selectedD
       addedToRCM: record.addedToRCM,
       refuelledBy: record.refuelledBy,
       receiptPhotoUrl: record.receiptPhotoUrl,
+      createdAt: record.createdAt,
     });
     setEditingPhoto(null);
   };
@@ -237,10 +238,24 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord, selectedD
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    <div className="space-y-1">
-                      <div>{format(record.refuelDateTime, 'MMM d, yyyy')}</div>
-                      <div className="text-xs">{format(record.refuelDateTime, 'HH:mm')}</div>
-                    </div>
+                    {editingId === record.id ? (
+                      <Input
+                        type="datetime-local"
+                        value={format((editData.createdAt as Date) || record.createdAt, "yyyy-MM-dd'T'HH:mm")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) {
+                            setEditData({ ...editData, createdAt: new Date(val) });
+                          }
+                        }}
+                        className="w-56"
+                      />
+                    ) : (
+                      <div className="space-y-1">
+                        <div>{format(record.createdAt, 'MMM d, yyyy')}</div>
+                        <div className="text-xs">{format(record.createdAt, 'HH:mm')}</div>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     {editingId === record.id ? (

@@ -56,3 +56,32 @@ export const formatDate = (date: string | Date): string => {
     minute: '2-digit',
   }).format(new Date(date));
 };
+
+export const validateRefuelForm = (formData: { rego: string; amount: string; refuelledBy: string; reservationNumber: string }): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+
+  if (!formData.rego.trim()) {
+    errors.push('Vehicle registration is required');
+  } else if (!validateRego(formData.rego)) {
+    errors.push('Invalid vehicle registration format');
+  }
+
+  if (!formData.amount.trim()) {
+    errors.push('Amount is required');
+  } else {
+    const amount = parseFloat(formData.amount);
+    if (isNaN(amount) || !validateAmount(amount)) {
+      errors.push('Amount must be a valid number between 0 and 1000');
+    }
+  }
+
+  if (!formData.refuelledBy.trim()) {
+    errors.push('Refuelled by is required');
+  }
+
+  if (!formData.reservationNumber.trim()) {
+    errors.push('Reservation number is required');
+  }
+
+  return { isValid: errors.length === 0, errors };
+};

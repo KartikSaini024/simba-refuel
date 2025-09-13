@@ -43,7 +43,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
     const tableSeparator = '─'.repeat(80);
     
     const recordsTable = records.map((record) => 
-      `${record.reservationNumber.padEnd(12)}\t${record.rego.padEnd(12)}\t${(record.addedToRCM ? 'Yes' : 'No').padEnd(12)}\t$${record.amount.toFixed(2).padStart(8)}\t${record.refuelledBy.padEnd(15)}\t${format(record.refuelDateTime, 'HH:mm')}`
+      `${record.reservationNumber.padEnd(12)}\t${record.rego.padEnd(12)}\t${(record.addedToRCM ? 'Yes' : 'No').padEnd(12)}\t$${record.amount.toFixed(2).padStart(8)}\t${record.refuelledBy.padEnd(15)}\t${format(record.createdAt, 'HH:mm')}`
     ).join('\n');
 
     const fullMessage = `${message}\n\n--- REFUEL RECORDS FOR ${format(date, 'dd/MM/yyyy').toUpperCase()} ---\n\n${tableHeader}\n${tableSeparator}\n${recordsTable}\n${tableSeparator}\n\nSUMMARY:\nTotal Records: ${records.length}\nTotal Amount: $${records.reduce((sum, record) => sum + record.amount, 0).toFixed(2)}\nAdded to RCM: ${records.filter(r => r.addedToRCM).length}`;
