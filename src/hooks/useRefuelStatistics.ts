@@ -17,6 +17,10 @@ export interface RefuelStatistics {
     recordCount: number;
     totalAmount: number;
   }>;
+  dailyTotalsByBranch: Array<{
+    date: string;
+    branches: Record<string, number>; // branchCode -> amount
+  }>;
 }
 
 export interface SearchFilters {
@@ -84,8 +88,12 @@ export const useRefuelStatistics = () => {
 
       // Group by date
       const dateMap = new Map();
+      const dateBranchMap = new Map(); // For daily totals by branch
       records.forEach(record => {
         const date = record.created_at.split('T')[0];
+        const branchCode = (record as any).branches?.code || 'Unknown';
+        
+        // Overall daily totals
         if (!dateMap.has(date)) {
           dateMap.set(date, {
             date,
@@ -96,6 +104,19 @@ export const useRefuelStatistics = () => {
         const day = dateMap.get(date);
         day.recordCount++;
         day.totalAmount += Number(record.amount);
+        
+        // Daily totals by branch
+        if (!dateBranchMap.has(date)) {
+          dateBranchMap.set(date, {
+            date,
+            branches: {}
+          });
+        }
+        const dayBranch = dateBranchMap.get(date);
+        if (!dayBranch.branches[branchCode]) {
+          dayBranch.branches[branchCode] = 0;
+        }
+        dayBranch.branches[branchCode] += Number(record.amount);
       });
 
       setStatistics({
@@ -103,6 +124,7 @@ export const useRefuelStatistics = () => {
         totalAmount,
         recordsByBranch: Array.from(branchMap.values()),
         dailyTotals: Array.from(dateMap.values()).sort((a, b) => b.date.localeCompare(a.date)),
+        dailyTotalsByBranch: Array.from(dateBranchMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
       });
     } catch (error) {
       console.error('Error fetching statistics:', error);

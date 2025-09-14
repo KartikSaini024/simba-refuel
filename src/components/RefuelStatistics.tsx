@@ -89,7 +89,13 @@ export const RefuelStatistics = ({ branches }: RefuelStatisticsProps) => {
             </Button>
             <Button
               variant="outline"
-              onClick={handleGetStatistics}
+              onClick={() => {
+                const startDate = new Date('2024-01-01');
+                const endDate = new Date();
+                const newFilters = { ...filters, startDate, endDate };
+                setFilters(newFilters);
+                fetchStatistics(newFilters);
+              }}
               className="justify-start"
             >
               All Time
@@ -247,19 +253,69 @@ export const RefuelStatistics = ({ branches }: RefuelStatisticsProps) => {
         <Card>
           <CardHeader>
             <CardTitle>Refuel Cost Trend</CardTitle>
-            <CardDescription>Daily total amount</CardDescription>
+            <CardDescription>
+              {filters.branchId ? 'Daily total amount for selected branch' : 'Daily total amount by branch'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer
-              config={{ amount: { label: 'Total Amount', color: 'hsl(var(--primary))' } }}
+              config={
+                filters.branchId 
+                  ? { amount: { label: 'Total Amount', color: 'hsl(var(--primary))' } }
+                  : statistics.recordsByBranch.reduce((acc, branch, index) => {
+                      const colors = [
+                        'hsl(var(--primary))',
+                        'hsl(var(--secondary))',
+                        'hsl(var(--accent))',
+                        'hsl(210, 40%, 60%)',
+                        'hsl(330, 40%, 60%)',
+                        'hsl(120, 40%, 60%)'
+                      ];
+                      acc[branch.branchCode] = {
+                        label: branch.branchName,
+                        color: colors[index % colors.length]
+                      };
+                      return acc;
+                    }, {} as any)
+              }
               className="w-full"
             >
-              <LineChart data={statistics.dailyTotals.slice().reverse().map((d) => ({ date: d.date, amount: d.totalAmount }))}>
+              <LineChart 
+                data={
+                  filters.branchId 
+                    ? statistics.dailyTotals.slice().reverse().map((d) => ({ date: d.date, amount: d.totalAmount }))
+                    : (() => {
+                        // Create multi-branch data using actual daily branch data
+                        const chartData = statistics.dailyTotalsByBranch.map(dayData => {
+                          const dataPoint: any = { date: dayData.date };
+                          statistics.recordsByBranch.forEach(branch => {
+                            dataPoint[branch.branchCode] = dayData.branches[branch.branchCode] || 0;
+                          });
+                          return dataPoint;
+                        });
+                        return chartData;
+                      })()
+                }
+              >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tickFormatter={(v) => format(new Date(v), 'MMM d')} />
                 <YAxis />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="amount" stroke="var(--color-amount)" strokeWidth={2} dot={false} />
+                {filters.branchId ? (
+                  <Line type="monotone" dataKey="amount" stroke="var(--color-amount)" strokeWidth={2} dot={false} />
+                ) : (
+                  statistics.recordsByBranch.map((branch, index) => (
+                    <Line 
+                      key={branch.branchCode}
+                      type="monotone" 
+                      dataKey={branch.branchCode} 
+                      stroke={`var(--color-${branch.branchCode})`} 
+                      strokeWidth={2} 
+                      dot={false}
+                      name={branch.branchName}
+                    />
+                  ))
+                )}
               </LineChart>
             </ChartContainer>
           </CardContent>
