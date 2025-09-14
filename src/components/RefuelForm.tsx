@@ -3,14 +3,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { validateRefuelForm } from '@/utils/validation';
 import { RefuelFormData } from '@/types/refuel';
 import PhotoUpload from './PhotoUpload';
-import { Plus } from 'lucide-react';
+import { Plus, CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 interface RefuelFormProps {
-  onSubmit: (data: RefuelFormData) => Promise<void>;
+  onSubmit: (data: RefuelFormData & { 
+    addedToRCM: boolean; 
+    createdAt: Date;
+    createdBy: string;
+  }) => Promise<void>;
   staffMembers: Array<{ id: string; name: string }>;
   isSubmitting?: boolean;
 }
@@ -21,6 +31,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
   isSubmitting = false 
 }) => {
   const { toast } = useToast();
+  const { user } = useAuthContext();
   const [formData, setFormData] = useState<RefuelFormData>({
     rego: '',
     amount: '',
@@ -28,6 +39,9 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
     reservationNumber: '',
     receiptPhotoUrl: ''
   });
+  const [addedToRCM, setAddedToRCM] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,7 +57,12 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       return;
     }
 
-    await onSubmit(formData);
+    await onSubmit({
+      ...formData,
+      addedToRCM,
+      createdAt: selectedDate,
+      createdBy: user?.id || ''
+    });
     
     // Reset form
     setFormData({
@@ -53,6 +72,8 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       reservationNumber: '',
       receiptPhotoUrl: ''
     });
+    setAddedToRCM(false);
+    setSelectedDate(new Date());
   };
 
   const handlePhotoSelected = (file: File | null) => {
@@ -125,6 +146,69 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                 placeholder="Enter reservation number"
                 required
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Date & Time</Label>
+              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "PPP 'at' HH:mm") : <span>Pick date & time</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        const newDate = new Date(date);
+                        newDate.setHours(selectedDate.getHours());
+                        newDate.setMinutes(selectedDate.getMinutes());
+                        setSelectedDate(newDate);
+                      }
+                    }}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                  <div className="p-3 border-t">
+                    <Input
+                      type="time"
+                      value={format(selectedDate, "HH:mm")}
+                      onChange={(e) => {
+                        const [hours, minutes] = e.target.value.split(':');
+                        const newDate = new Date(selectedDate);
+                        newDate.setHours(parseInt(hours));
+                        newDate.setMinutes(parseInt(minutes));
+                        setSelectedDate(newDate);
+                      }}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label>RCM Status</Label>
+              <div className="flex items-center space-x-2 mt-2">
+                <Switch
+                  id="rcm-status"
+                  checked={addedToRCM}
+                  onCheckedChange={setAddedToRCM}
+                />
+                <Label htmlFor="rcm-status" className="text-sm">
+                  {addedToRCM ? 'Added to RCM' : 'Not added to RCM'}
+                </Label>
+              </div>
             </div>
           </div>
 

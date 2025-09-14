@@ -125,7 +125,11 @@ const Index = () => {
     }
   };
 
-  const addRecord = async (recordData: RefuelFormData) => {
+  const addRecord = async (recordData: RefuelFormData & { 
+    addedToRCM: boolean; 
+    createdAt: Date;
+    createdBy: string;
+  }) => {
     if (!selectedBranchId || !user) return;
 
     try {
@@ -137,8 +141,9 @@ const Index = () => {
           amount: parseFloat(recordData.amount),
           reservation_number: recordData.reservationNumber,
           refuelled_by: recordData.refuelledBy,
-          created_by: user.id,
-          created_at: new Date().toISOString(),
+          created_by: recordData.createdBy,
+          created_at: recordData.createdAt.toISOString(),
+          added_to_rcm: recordData.addedToRCM,
           receipt_photo_url: recordData.receiptPhotoUrl,
         })
         .select()

@@ -43,13 +43,35 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setShowCamera(true);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        // Wait for video to load
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play();
-        };
-      }
+      
+      // Wait for the next tick to ensure video element is in DOM
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          videoRef.current.onloadedmetadata = () => {
+            if (videoRef.current) {
+              videoRef.current.play().catch(err => {
+                console.error('Error playing video:', err);
+                toast({
+                  variant: "destructive",
+                  title: "Camera Error",
+                  description: "Failed to start camera preview. Please try again.",
+                });
+              });
+            }
+          };
+          
+          // Force play after a short delay if metadata doesn't load
+          setTimeout(() => {
+            if (videoRef.current && videoRef.current.readyState >= 1) {
+              videoRef.current.play().catch(() => {
+                // Silent fail - onloadedmetadata will handle it
+              });
+            }
+          }, 500);
+        }
+      }, 100);
+      
     } catch (error) {
       console.error('Error accessing camera:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unable to access camera. Please check permissions.';
@@ -60,6 +82,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           'Camera requires HTTPS. Please use file upload instead.' : 
           'Unable to access camera. Please check permissions or use file upload.',
       });
+      setShowCamera(false);
     }
   };
 
@@ -140,7 +163,9 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-48 object-cover rounded-md bg-black"
+                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
               />
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
                 <Button

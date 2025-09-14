@@ -110,7 +110,28 @@ export const RefuelTable = ({ records, onRemoveRecord, onUpdateRecord, selectedD
         }
       }
       
-      onUpdateRecord(editingId, finalEditData);
+      // Update the database directly
+      try {
+        const { error } = await supabase
+          .from('refuel_records')
+          .update({
+            rego: finalEditData.rego,
+            amount: finalEditData.amount,
+            refuelled_by: finalEditData.refuelledBy,
+            reservation_number: finalEditData.reservationNumber,
+            added_to_rcm: finalEditData.addedToRCM,
+            created_at: finalEditData.createdAt?.toISOString(),
+            receipt_photo_url: finalEditData.receiptPhotoUrl
+          })
+          .eq('id', editingId);
+
+        if (error) throw error;
+        
+        onUpdateRecord(editingId, finalEditData);
+      } catch (error) {
+        console.error('Error updating record:', error);
+      }
+      
       setEditingId(null);
       setEditData({});
       setEditingPhoto(null);
