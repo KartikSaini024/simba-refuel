@@ -89,14 +89,19 @@ const Index = () => {
 
     setLoadingData(true);
     try {
-      const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+      // Create start and end dates in local timezone, then convert to UTC for database query
+      const startOfDay = new Date(selectedDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      const endOfDay = new Date(selectedDate);
+      endOfDay.setHours(23, 59, 59, 999);
       
       const { data, error } = await supabase
         .from('refuel_records')
         .select('*')
         .eq('branch_id', selectedBranchId)
-        .gte('created_at', `${selectedDateStr}T00:00:00`)
-        .lt('created_at', `${selectedDateStr}T23:59:59`)
+        .gte('created_at', startOfDay.toISOString())
+        .lte('created_at', endOfDay.toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;

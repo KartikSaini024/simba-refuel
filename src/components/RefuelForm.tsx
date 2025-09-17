@@ -14,6 +14,7 @@ import { Plus, CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RefuelFormProps {
   onSubmit: (data: RefuelFormData & { 
@@ -43,6 +44,38 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `receipt-${Date.now()}.${fileExt}`;
+      const filePath = `receipt-photos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('receipt-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('receipt-photos')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      toast({
+        variant: "destructive",
+        title: "Upload Error",
+        description: "Failed to upload receipt photo."
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,8 +90,17 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       return;
     }
 
+    let photoUrl = formData.receiptPhotoUrl;
+    
+    // Upload photo if one is selected
+    if (selectedPhoto) {
+      photoUrl = await uploadPhoto(selectedPhoto);
+      if (!photoUrl) return; // Upload failed
+    }
+
     await onSubmit({
       ...formData,
+      receiptPhotoUrl: photoUrl || '',
       addedToRCM,
       createdAt: selectedDate,
       createdBy: user?.id || ''
@@ -74,10 +116,14 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
     });
     setAddedToRCM(false);
     setSelectedDate(new Date());
+    setSelectedPhoto(null);
   };
 
   const handlePhotoSelected = (file: File | null) => {
-    // Handle photo selection but we're not using photo upload in the simplified form
+    setSelectedPhoto(file);
+    if (file) {
+      setFormData({ ...formData, receiptPhotoUrl: '' }); // Clear existing URL when new file selected
+    }
   };
 
   return (
@@ -214,7 +260,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
 
           <PhotoUpload 
             onPhotoSelected={handlePhotoSelected}
-            selectedFile={null}
+            selectedFile={selectedPhoto}
           />
 
           <Button 
