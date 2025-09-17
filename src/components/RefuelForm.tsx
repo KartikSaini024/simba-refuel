@@ -54,13 +54,13 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       const filePath = `receipt-photos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('receipt-photos')
+        .from('refuel-receipts')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage
-        .from('receipt-photos')
+        .from('refuel-receipts')
         .getPublicUrl(filePath);
 
       return data.publicUrl;
