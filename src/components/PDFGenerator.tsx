@@ -140,6 +140,7 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
           if (record.receiptPhotoUrl) {
             try {
               const { data } = supabase.storage.from('refuel-receipts').getPublicUrl(record.receiptPhotoUrl);
+              console.log("Receipt URL:", data.publicUrl);
               const response = await fetch(data.publicUrl);
               const blob = await response.blob();
               const reader = new FileReader();
@@ -150,7 +151,9 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
                 };
                 reader.readAsDataURL(blob);
               });
-            } catch { /* ignore */ }
+            } catch (err) {
+              console.error('Error loading receipt image:', err);
+            }
           }
           return { ...record, receiptImage };
         })
@@ -195,18 +198,34 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
           }
           doc.setFontSize(10);
           doc.text(`Receipt #${index + 1} - ${record.rego}`, 20, currentY);
+
           try {
+            const base64Img = record.receiptImage as string;
+            const isPng = base64Img.startsWith("data:image/png");
+            const format = isPng ? "PNG" : "JPEG";
+
+            const maxWidth = 120;
+            const maxHeight = 80;
+
+            // Create an offscreen image to compute dimensions
             const img = new Image();
-            img.src = record.receiptImage as string;
-            const maxWidth = 120, maxHeight = 80;
-            img.onload = () => {
-              const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
-              doc.addImage(record.receiptImage as string, 'JPEG', 20, currentY + 5, img.width * ratio, img.height * ratio);
-            };
-          } catch {
-            doc.text('Error loading receipt image', 20, currentY + 10);
+            img.src = base64Img;
+            await new Promise((resolve) => {
+              img.onload = () => {
+                const ratio = Math.min(maxWidth / img.width, maxHeight / img.height);
+                const displayWidth = img.width * ratio;
+                const displayHeight = img.height * ratio;
+                doc.addImage(base64Img, format, 20, currentY + 5, displayWidth, displayHeight);
+                currentY += displayHeight + 20;
+                resolve(null);
+              };
+            });
+          } catch (err) {
+            console.error("Error adding receipt image:", err);
+            doc.setFontSize(8);
+            doc.text("Error loading receipt image", 20, currentY + 10);
+            currentY += 20;
           }
-          currentY += 90;
         }
       }
 
