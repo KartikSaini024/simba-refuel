@@ -30,11 +30,9 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
   const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     setIsDrawing(true);
     ctx.beginPath();
     ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
@@ -42,14 +40,11 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
 
   const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing) return;
-
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
     ctx.stroke();
   }, [isDrawing]);
@@ -93,7 +88,6 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
 
   const generatePDF = async (saveOnly = true) => {
     if (!checkedBy) return;
-
     setIsGenerating(true);
 
     try {
@@ -117,7 +111,6 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
       doc.text("REFUEL LIST REPORT", pageWidth / 2, 40, { align: "center" });
-
       doc.setFontSize(12);
       doc.setTextColor(33, 82, 135);
       doc.text(`Branch: ${branchName || 'Unknown Branch'}`, pageWidth / 2, 50, { align: "center" });
@@ -129,7 +122,7 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
       doc.text(`Report Date: ${format(currentDate, 'EEEE, MMMM d, yyyy')}`, pageWidth / 2, 58, { align: "center" });
       doc.text(`Generated: ${format(currentDate, 'h:mm a')}`, pageWidth / 2, 65, { align: "center" });
 
-      // Separator line
+      // Separator
       doc.setDrawColor(33, 82, 135);
       doc.line(20, 72, pageWidth - 20, 72);
 
@@ -139,11 +132,25 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
           let receiptImage = null;
           if (record.receiptPhotoUrl) {
             try {
-              const { data } = supabase.storage.from('refuel-receipts').getPublicUrl(record.receiptPhotoUrl);
-              console.log("Receipt URL:", data.publicUrl);
-              const response = await fetch(data.publicUrl);
+              let publicUrl: string;
+              if (record.receiptPhotoUrl.startsWith("http")) {
+                // Already a full URL
+                publicUrl = record.receiptPhotoUrl;
+              } else {
+                // It's a key/path
+                const { data } = supabase
+                  .storage
+                  .from("refuel-receipts")
+                  .getPublicUrl(record.receiptPhotoUrl);
+                publicUrl = data.publicUrl;
+              }
+
+              console.log("Receipt URL used:", publicUrl);
+
+              const response = await fetch(publicUrl);
               const blob = await response.blob();
               const reader = new FileReader();
+
               await new Promise((resolve) => {
                 reader.onload = () => {
                   receiptImage = reader.result;
@@ -152,7 +159,7 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
                 reader.readAsDataURL(blob);
               });
             } catch (err) {
-              console.error('Error loading receipt image:', err);
+              console.error("Error loading receipt image:", err);
             }
           }
           return { ...record, receiptImage };
@@ -167,8 +174,8 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
         record.addedToRCM ? "✓ Yes" : "✗ No",
         `$${record.amount.toFixed(2)}`,
         record.refuelledBy,
-        format(record.createdAt, 'HH:mm'),
-        record.receiptImage ? '📷' : ''
+        format(record.createdAt, "HH:mm"),
+        record.receiptImage ? "📷" : ""
       ]);
 
       const totalAmount = records.reduce((sum, r) => sum + r.amount, 0);
@@ -207,7 +214,6 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
             const maxWidth = 120;
             const maxHeight = 80;
 
-            // Create an offscreen image to compute dimensions
             const img = new Image();
             img.src = base64Img;
             await new Promise((resolve) => {
@@ -284,12 +290,11 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
       }
 
       const fileName = `Simba-Car-Hire-Refuel-Report-${branchName?.replace(/\s+/g, '-') || 'Branch'}-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`;
-
       if (saveOnly) {
         doc.save(fileName);
       }
-
       return { fileName, pdfData: doc.output('datauristring') };
+
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({ title: "PDF Generation Error", description: "There was an issue generating the PDF.", variant: "destructive" });
