@@ -26,26 +26,51 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
-  // Signature canvas functions
-  const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+
+  // Signature canvas functions (mouse + touch)
+  const getPointerPos = (e: React.MouseEvent<HTMLCanvasElement> | TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if ('touches' in e && e.touches.length > 0) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top,
+      };
+    } else if ('clientX' in e) {
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
+    return { x: 0, y: 0 };
+  };
+
+  const startDrawing = useCallback((e: React.MouseEvent<HTMLCanvasElement> | TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     setIsDrawing(true);
     ctx.beginPath();
-    ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    const { x, y } = getPointerPos(e);
+    ctx.moveTo(x, y);
   }, []);
 
-  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = useCallback((e: React.MouseEvent<HTMLCanvasElement> | TouchEvent) => {
     if (!isDrawing) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+    let x = 0, y = 0;
+    if ('touches' in e && e.touches.length > 0) {
+      e.preventDefault();
+      ({ x, y } = getPointerPos(e));
+    } else if ('clientX' in e) {
+      ({ x, y } = getPointerPos(e));
+    }
+    ctx.lineTo(x, y);
     ctx.stroke();
   }, [isDrawing]);
 
@@ -171,11 +196,11 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
         (index + 1).toString(),
         record.reservationNumber,
         record.rego,
-        record.addedToRCM ? "✓ Yes" : "✗ No",
+        record.addedToRCM ? "Yes" : "No",
         `$${record.amount.toFixed(2)}`,
         record.refuelledBy,
         format(record.createdAt, "HH:mm"),
-        record.receiptImage ? "📷" : ""
+        record.receiptImage ? "Yes" : "No"
       ]);
 
       const totalAmount = records.reduce((sum, r) => sum + r.amount, 0);
@@ -186,12 +211,42 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
         head: [['#', 'Reservation', 'Rego', 'RCM', 'Amount', 'Refuelled By', 'Time', 'Receipt']],
         body: tableData,
         foot: [['', '', 'TOTAL:', `${rcmCount} in RCM`, `$${totalAmount.toFixed(2)}`, `${records.length} records`, '', '']],
-        theme: 'striped',
-        headStyles: { fillColor: [33, 82, 135], textColor: 255, halign: 'center' },
-        bodyStyles: { fontSize: 9, valign: 'middle', textColor: [51, 51, 51] },
-        footStyles: { fillColor: [245, 247, 250], fontStyle: 'bold' },
-        alternateRowStyles: { fillColor: [250, 251, 253] },
+        theme: 'grid',
+        headStyles: {
+          fillColor: [33, 82, 135],
+          textColor: 255,
+          halign: 'center',
+          valign: 'middle',
+          fontStyle: 'bold',
+          fontSize: 11,
+          lineWidth: 0.5,
+          lineColor: [180, 180, 180],
+        },
+        bodyStyles: {
+          fontSize: 10,
+          valign: 'middle',
+          halign: 'center',
+          textColor: [51, 51, 51],
+          lineWidth: 0.3,
+          lineColor: [220, 220, 220],
+          minCellHeight: 10,
+        },
+        footStyles: {
+          fillColor: [245, 247, 250],
+          fontStyle: 'bold',
+          halign: 'center',
+          textColor: [33, 82, 135],
+          fontSize: 10,
+        },
+        alternateRowStyles: {
+          fillColor: [235, 240, 250],
+        },
         margin: { left: 15, right: 15 },
+        tableLineWidth: 0.5,
+        tableLineColor: [180, 180, 180],
+        didDrawCell: (data) => {
+          // Optionally add custom cell drawing here for more style
+        },
       });
 
       let currentY = (doc as any).lastAutoTable.finalY + 15;
@@ -276,7 +331,7 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
       }
 
       // Footer with page numbers
-      const pageCount = doc.internal.getNumberOfPages();
+      const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
@@ -353,6 +408,9 @@ export const PDFGenerator = ({ records, staff, branchName }: PDFGeneratorProps) 
               onMouseMove={draw}
               onMouseUp={stopDrawing}
               onMouseLeave={stopDrawing}
+              onTouchStart={e => startDrawing(e.nativeEvent)}
+              onTouchMove={e => draw(e.nativeEvent)}
+              onTouchEnd={stopDrawing}
               style={{ touchAction: 'none' }}
             />
             <p className="text-xs text-muted-foreground">Draw your signature above. It will be included in the PDF report.</p>

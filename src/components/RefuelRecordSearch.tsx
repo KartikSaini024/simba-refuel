@@ -94,12 +94,13 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
         if (rcmStatus !== 'all') {
           query = query.eq('added_to_rcm', rcmStatus === 'true');
         }
+      } else if (searchField === 'created_by') {
+        // Search by first or last name in joined profile (Supabase PostgREST syntax)
+        query = query.or(`(profiles.first_name.ilike.%${searchValue}%,profiles.last_name.ilike.%${searchValue}%)`);
+      } else if (searchField === 'rego') {
+        query = query.ilike('rego', `%${searchValue.toUpperCase()}%`);
       } else {
-        if (searchField === 'rego') {
-          query = query.ilike('rego', `%${searchValue.toUpperCase()}%`);
-        } else {
-          query = query.ilike(searchField, `%${searchValue}%`);
-        }
+        query = query.ilike(searchField, `%${searchValue}%`);
       }
 
       const { data, error } = await query;

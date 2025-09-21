@@ -164,8 +164,16 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
                 autoPlay
                 playsInline
                 muted
-                className="w-full h-48 object-cover rounded-md bg-black"
-                style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                className="w-full object-contain rounded-md bg-black"
+                style={{
+                  aspectRatio: '16/9',
+                  height: 'auto',
+                  maxHeight: '60vh',
+                  transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
+                  background: 'black',
+                  display: 'block',
+                  margin: '0 auto',
+                }}
               />
               <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-2">
                 <Button

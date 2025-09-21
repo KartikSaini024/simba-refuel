@@ -22,13 +22,16 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
   date = new Date(),
 }) => {
   const [email, setEmail] = useState('');
+  const [cc, setCc] = useState('');
   const [subject, setSubject] = useState(`Refuel Report - ${branchName} - ${format(date, 'dd/MM/yyyy')}`);
   const [message, setMessage] = useState(
-    `Dear Team,\n\nPlease find the refuel list attached for ${format(date, 'EEEE, MMMM d, yyyy')}.\n\nBest regards,\n${branchName} Team`
+    ``
   );
   const [open, setOpen] = useState(false);
 
-  const handleSendEmail = () => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSendEmail = async () => {
     if (!email) {
       toast({
         variant: "destructive",
@@ -38,33 +41,44 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
       return;
     }
 
-    // Create email body with records table
-    const tableHeader = 'Reservation\t\tRegistration\tRCM Status\t\tAmount\t\tRefuelled By\t\tTime';
-    const tableSeparator = '─'.repeat(80);
-    
-    const recordsTable = records.map((record) => 
-      `${record.reservationNumber.padEnd(12)}\t${record.rego.padEnd(12)}\t${(record.addedToRCM ? 'Yes' : 'No').padEnd(12)}\t$${record.amount.toFixed(2).padStart(8)}\t${record.refuelledBy.padEnd(15)}\t${format(record.createdAt, 'HH:mm')}`
-    ).join('\n');
-
-    const fullMessage = `${message}\n\n--- REFUEL RECORDS FOR ${format(date, 'dd/MM/yyyy').toUpperCase()} ---\n\n${tableHeader}\n${tableSeparator}\n${recordsTable}\n${tableSeparator}\n\nSUMMARY:\nTotal Records: ${records.length}\nTotal Amount: $${records.reduce((sum, record) => sum + record.amount, 0).toFixed(2)}\nAdded to RCM: ${records.filter(r => r.addedToRCM).length}`;
-
-    // Create mailto URL
-    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fullMessage)}`;
-    
-    // Open email client
+    setIsLoading(true);
     try {
-      window.open(mailtoUrl, '_blank');
-    } catch (error) {
-      // Fallback for some browsers
-      window.location.href = mailtoUrl;
+      const res = await fetch('http://localhost:5000/api/sendReportEmail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          cc,
+          subject,
+          message,
+          records,
+          branchName,
+          date: format(date, 'yyyy-MM-dd'),
+        }),
+      });
+      if (res.ok) {
+        toast({
+          title: "Email Sent!",
+          description: "The report was sent successfully.",
+        });
+        setOpen(false);
+      } else {
+        const data = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Failed to send email",
+          description: data.error || 'An error occurred sending the email.',
+        });
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Network Error",
+        description: "Could not send email. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    toast({
-      title: "Email Client Opened",
-      description: "Your default email client has been opened with the pre-filled message.",
-    });
-
-    setOpen(false);
   };
 
   return (
@@ -80,6 +94,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
           <DialogTitle>Send Email Report</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
+
           <div className="space-y-2">
             <Label htmlFor="email">Recipient Email</Label>
             <Input
@@ -88,6 +103,19 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
               placeholder="Enter recipient email..."
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cc">CC (optional)</Label>
+            <Input
+              id="cc"
+              type="email"
+              placeholder="Add CC email(s), comma separated"
+              value={cc}
+              onChange={(e) => setCc(e.target.value)}
+              autoComplete="email"
             />
           </div>
 
@@ -101,10 +129,11 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="message">Message</Label>
+            <Label htmlFor="message">Notes (Optional)</Label>
             <Textarea
               id="message"
               rows={6}
+              placeholder='Add any additional notes...'
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />
@@ -124,11 +153,17 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
           </Card>
 
           <div className="flex gap-2 pt-4">
-            <Button onClick={handleSendEmail} className="flex-1">
-              <Send className="h-4 w-4 mr-2" />
-              Open Email Client
+            <Button onClick={handleSendEmail} className="flex-1" disabled={isLoading}>
+              {isLoading ? (
+                <span className="flex items-center justify-center w-full">
+                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mr-2"></span>
+                  Sending...
+                </span>
+              ) : (
+                <><Send className="h-4 w-4 mr-2" />Send Email</>
+              )}
             </Button>
-            <Button variant="outline" onClick={() => setOpen(false)}>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
               Cancel
             </Button>
           </div>
