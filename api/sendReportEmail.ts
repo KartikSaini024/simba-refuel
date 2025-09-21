@@ -1,23 +1,26 @@
 // api/sendReportEmail.ts
 import nodemailer from "nodemailer";
-import formidable from "formidable";
+import { IncomingForm } from "formidable";
+import fs from "fs";
 
 export const config = {
   api: {
-    bodyParser: false, // important
+    bodyParser: false,
   },
 };
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const form = new formidable.IncomingForm({ multiples: true });
+  const form = new IncomingForm({ multiples: true });
 
   form.parse(req, async (err, fields, files) => {
     if (err) return res.status(500).json({ error: "Error parsing form data", details: err });
 
     const { to, cc, subject, message, records, branchName, date } = fields;
-    const attachments = files.attachments ? (Array.isArray(files.attachments) ? files.attachments : [files.attachments]) : [];
+    const attachments = files.attachments
+      ? Array.isArray(files.attachments) ? files.attachments : [files.attachments]
+      : [];
 
     if (!to || !subject || !records || !branchName || !date) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -70,7 +73,7 @@ export default async function handler(req: any, res: any) {
         html,
         attachments: attachments.map((file: any) => ({
           filename: file.originalFilename,
-          content: file.filepath ? require("fs").createReadStream(file.filepath) : undefined,
+          content: fs.createReadStream(file.filepath),
         })),
       });
 
