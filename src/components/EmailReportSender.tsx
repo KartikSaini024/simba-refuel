@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -28,75 +28,76 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
     ``
   );
   const [open, setOpen] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendEmail = async () => {
-  if (!email) {
-    toast({
-      variant: "destructive",
-      title: "Email Required",
-      description: "Please enter a recipient email address.",
-    });
-    return;
-  }
-
-  setIsLoading(true);
-  try {
-    // // for vercel serverless function
-    const res = await fetch("/api/sendReportEmail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        to: email,
-        cc: cc, // optional
-        subject,
-        message: message, // optional
-        records,
-        branchName,
-        date: new Date().toISOString(),
-      }),
-    });
-
-    // // for local testing with server/sendReportEmail.ts
-    // const res = await fetch('http://localhost:5000/api/sendReportEmail', {
-    //     method: 'POST',
-    //     headers: { 'Content-Type': 'application/json' },
-    //     body: JSON.stringify({
-    //       to: email,
-    //       cc,
-    //       subject,
-    //       message,
-    //       records,
-    //       branchName,
-    //       date: format(date, 'yyyy-MM-dd'),
-    //     }),
-    //   });
-
-    if (res.ok) {
-      toast({
-        title: "Email Sent!",
-        description: "The report was sent successfully.",
-      });
-      setOpen(false);
-    } else {
-      const data = await res.json();
+    if (!email) {
       toast({
         variant: "destructive",
-        title: "Failed to send email",
-        description: data?.error || "An error occurred sending the email.",
+        title: "Email Required",
+        description: "Please enter a recipient email address.",
       });
+      return;
     }
-  } catch (err) {
-    toast({
-      variant: "destructive",
-      title: "Network Error",
-      description: "Could not send email. Please try again.",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('to', email);
+      formData.append('cc', cc);
+      formData.append('subject', subject);
+      formData.append('message', message);
+      formData.append('branchName', branchName);
+      formData.append('date', new Date().toISOString());
+      formData.append('records', JSON.stringify(records));
+      attachments.forEach((file, idx) => {
+        formData.append('attachments', file, file.name);
+      });
+
+      // const res = await fetch('/api/sendReportEmail', {  // for deployment with  API route
+      const res = await fetch('http://localhost:5000/api/sendReportEmail', {   //for local testing with separate server
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        toast({
+          title: "Email Sent!",
+          description: "The report was sent successfully.",
+        });
+        setOpen(false);
+        setAttachments([]);
+      } else {
+        const data = await res.json();
+        toast({
+          variant: "destructive",
+          title: "Failed to send email",
+          description: data?.error || "An error occurred sending the email.",
+        });
+      }
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Network Error",
+        description: "Could not send email. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAttachments(Array.from(e.target.files));
+    }
+  };
+
+  const removeAttachment = (idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  };
 
 
   return (
@@ -114,6 +115,30 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         <div className="space-y-4">
 
           <div className="space-y-2">
+          <div className="space-y-2">
+            <Label htmlFor="attachments">Attachments</Label>
+            <input
+              id="attachments"
+              type="file"
+              multiple
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              disabled={isLoading}
+            />
+            {attachments.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs">
+                {attachments.map((file, idx) => (
+                  <li key={file.name + idx} className="flex items-center gap-2">
+                    <span>{file.name}</span>
+                    <Button type="button" size="icon" variant="ghost" onClick={() => removeAttachment(idx)} disabled={isLoading}>
+                      &times;
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
             <Label htmlFor="email">Recipient Email</Label>
             <Input
               id="email"

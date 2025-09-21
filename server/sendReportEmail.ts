@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-export async function sendReportEmail({ to, cc, subject, message, records, branchName, date }: any) {
+export async function sendReportEmail({ to, cc, subject, message, records, branchName, date, attachments }: any) {
   // Build HTML table
   const tableRows = records.map((r: any) => `
     <tr>
@@ -58,5 +58,6 @@ export async function sendReportEmail({ to, cc, subject, message, records, branc
     cc: cc && cc.trim() !== '' ? cc.split(',').map((email: string) => email.trim()) : undefined,
     subject,
     html,
+    attachments: attachments && attachments.length > 0 ? attachments : undefined,
   });
 }
