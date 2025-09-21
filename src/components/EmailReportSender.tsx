@@ -32,54 +32,56 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendEmail = async () => {
-    if (!email) {
-      toast({
-        variant: "destructive",
-        title: "Email Required",
-        description: "Please enter a recipient email address.",
-      });
-      return;
-    }
+  if (!email) {
+    toast({
+      variant: "destructive",
+      title: "Email Required",
+      description: "Please enter a recipient email address.",
+    });
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      const res = await fetch('http://localhost:5000/api/sendReportEmail', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          cc,
-          subject,
-          message,
-          records,
-          branchName,
-          date: format(date, 'yyyy-MM-dd'),
-        }),
+  setIsLoading(true);
+  try {
+    const res = await fetch("/api/sendReportEmail", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: email,
+        cc: cc, // optional
+        subject,
+        message: message, // optional
+        records,
+        branchName,
+        date: new Date().toISOString(),
+      }),
+    });
+
+    if (res.ok) {
+      toast({
+        title: "Email Sent!",
+        description: "The report was sent successfully.",
       });
-      if (res.ok) {
-        toast({
-          title: "Email Sent!",
-          description: "The report was sent successfully.",
-        });
-        setOpen(false);
-      } else {
-        const data = await res.json();
-        toast({
-          variant: "destructive",
-          title: "Failed to send email",
-          description: data.error || 'An error occurred sending the email.',
-        });
-      }
-    } catch (err) {
+      setOpen(false);
+    } else {
+      const data = await res.json();
       toast({
         variant: "destructive",
-        title: "Network Error",
-        description: "Could not send email. Please try again.",
+        title: "Failed to send email",
+        description: data?.error || "An error occurred sending the email.",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  } catch (err) {
+    toast({
+      variant: "destructive",
+      title: "Network Error",
+      description: "Could not send email. Please try again.",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
