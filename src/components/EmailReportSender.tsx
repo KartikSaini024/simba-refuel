@@ -23,7 +23,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [cc, setCc] = useState('');
-  const [subject, setSubject] = useState(`Refuel Report - ${branchName} - ${format(date, 'dd/MM/yyyy')}`);
+  const [subject, setSubject] = useState(`Refuel Report ${branchName} - ${format(date, 'dd/MM/yyyy')}`);
   const [message, setMessage] = useState(
     ``
   );
@@ -43,6 +43,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
 
   setIsLoading(true);
   try {
+    // // for vercel serverless function
     const res = await fetch("/api/sendReportEmail", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,6 +57,21 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         date: new Date().toISOString(),
       }),
     });
+
+    // // for local testing with server/sendReportEmail.ts
+    // const res = await fetch('http://localhost:5000/api/sendReportEmail', {
+    //     method: 'POST',
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({
+    //       to: email,
+    //       cc,
+    //       subject,
+    //       message,
+    //       records,
+    //       branchName,
+    //       date: format(date, 'yyyy-MM-dd'),
+    //     }),
+    //   });
 
     if (res.ok) {
       toast({

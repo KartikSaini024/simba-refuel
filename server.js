@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import { sendReportEmail } from "./server/sendReportEmail.ts";
 
-dotenv.config();
+dotenv.config({ path: ".env.local" }); // explicitly load env.local
 
 const app = express();
 
