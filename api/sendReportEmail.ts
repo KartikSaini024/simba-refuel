@@ -6,7 +6,15 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { to, cc, subject, message, records, branchName, date, attachments } = req.body;
+  // Parse body safely
+  let body;
+  try {
+    body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
+  } catch (err) {
+    return res.status(400).json({ error: "Invalid JSON" });
+  }
+
+  const { to, cc, subject, message, records, branchName, date, attachments } = body;
 
   if (!to || !subject || !records || !branchName || !date) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -42,7 +50,7 @@ export default async function handler(req: any, res: any) {
         ${tableRows}
       </tbody>
     </table>
-    ${message && `<p><b>Notes:</b></p><p>${message}</p>`}
+    ${message ? `<p><b>Notes:</b></p><p>${message}</p>` : ""}
     <p><b>Summary:</b><br>
       Total Records: ${records.length}<br>
       Total Amount: $${records.reduce((sum: number, r: any) => sum + r.amount, 0).toFixed(2)}<br>
@@ -54,10 +62,7 @@ export default async function handler(req: any, res: any) {
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      },
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_PASS },
     });
 
     await transporter.sendMail({
