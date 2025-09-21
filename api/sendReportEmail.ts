@@ -6,15 +6,18 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Parse body safely
+  // Safely parse req.body
   let body;
   try {
+    // Sometimes Vercel serverless provides raw string
     body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
   } catch (err) {
-    return res.status(400).json({ error: "Invalid JSON" });
+    console.error("Error parsing JSON body:", err);
+    return res.status(400).json({ error: "Invalid JSON body" });
   }
 
-  const { to, cc, subject, message, records, branchName, date, attachments } = body;
+  // Now destructure safely
+  const { to, cc, subject, message, records, branchName, date, attachments } = body || {};
 
   if (!to || !subject || !records || !branchName || !date) {
     return res.status(400).json({ error: "Missing required fields" });
