@@ -45,3 +45,14 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- express (local backend server for sending emails)
+
+## Notes on Email Sending
+
+### Testing Emails Locally
+
+In `src/components/EmailReportSender.tsx`, there is a comment showing how to switch the API endpoint to your local Express server for testing email sending before deploying to Vercel.  
+
+- By default, the frontend calls the serverless function at `/api/sendReportEmail`.
+- To test with your local server (e.g., `http://localhost:5000/api/sendReportEmail`), uncomment or modify the fetch URL in `handleSendEmail` accordingly.
+- Make sure your local server (`server.js`) is running and the environment variables (`GMAIL_USER` and `GMAIL_PASS`) are set in your `.env` file.

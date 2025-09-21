@@ -57,8 +57,8 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         formData.append('attachments', file, file.name);
       });
 
-      // const res = await fetch('/api/sendReportEmail', {  // for deployment with  API route
-      const res = await fetch('http://localhost:5000/api/sendReportEmail', {   //for local testing with separate server
+      const res = await fetch('/api/sendReportEmail', {  // for deployment with  API route
+      // const res = await fetch('http://localhost:5000/api/sendReportEmail', {   //for local testing with separate server
         method: 'POST',
         body: formData,
       });
