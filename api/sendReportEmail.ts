@@ -5,7 +5,7 @@ import fs from "fs";
 
 export const config = {
   api: {
-    bodyParser: false, // Important: disable default parser for FormData
+    bodyParser: false, // Required for FormData
   },
 };
 
@@ -20,17 +20,20 @@ export default async function handler(req: any, res: any) {
     if (err) return res.status(500).json({ error: "Error parsing form data", details: err });
 
     try {
-      // Extract fields
-      const { to, cc, subject, message, records, branchName, date } = fields;
+      // Normalize fields from FormData (they may come as arrays)
+      const to = Array.isArray(fields.to) ? fields.to[0] : fields.to;
+      const ccValue = Array.isArray(fields.cc) ? fields.cc[0] : fields.cc;
+      const subject = Array.isArray(fields.subject) ? fields.subject[0] : fields.subject;
+      const message = Array.isArray(fields.message) ? fields.message[0] : fields.message;
+      const branchName = Array.isArray(fields.branchName) ? fields.branchName[0] : fields.branchName;
+      const date = Array.isArray(fields.date) ? fields.date[0] : fields.date;
+      const records = fields.records ? JSON.parse(Array.isArray(fields.records) ? fields.records[0] : fields.records) : [];
 
       if (!to || !subject || !records || !branchName || !date) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      const parsedRecords = JSON.parse(records as string);
-
-      // Normalize CC (could be array from FormData)
-      const ccValue = Array.isArray(cc) ? cc[0] : cc;
+      // Normalize CC list
       const ccList = ccValue && ccValue.trim() !== "" ? ccValue.split(",").map((e: string) => e.trim()) : undefined;
 
       // Normalize attachments
@@ -41,18 +44,18 @@ export default async function handler(req: any, res: any) {
         : [];
 
       // Build HTML table
-      const tableRows = parsedRecords
+      const tableRows = records
         .map(
           (r: any) => `
-        <tr>
-          <td>${r.reservationNumber}</td>
-          <td>${r.rego}</td>
-          <td>${r.addedToRCM ? "Yes" : "No"}</td>
-          <td>$${r.amount.toFixed(2)}</td>
-          <td>${r.refuelledBy}</td>
-          <td>${new Date(r.createdAt).toLocaleTimeString()}</td>
-        </tr>
-      `
+          <tr>
+            <td>${r.reservationNumber}</td>
+            <td>${r.rego}</td>
+            <td>${r.addedToRCM ? "Yes" : "No"}</td>
+            <td>$${r.amount.toFixed(2)}</td>
+            <td>${r.refuelledBy}</td>
+            <td>${new Date(r.createdAt).toLocaleTimeString()}</td>
+          </tr>
+        `
         )
         .join("");
 
@@ -74,9 +77,9 @@ export default async function handler(req: any, res: any) {
         </table>
         ${message ? `<p><b>Notes:</b></p><p>${message}</p>` : ""}
         <p><b>Summary:</b><br>
-          Total Records: ${parsedRecords.length}<br>
-          Total Amount: $${parsedRecords.reduce((sum: number, r: any) => sum + r.amount, 0).toFixed(2)}<br>
-          Added to RCM: ${parsedRecords.filter((r: any) => r.addedToRCM).length}
+          Total Records: ${records.length}<br>
+          Total Amount: $${records.reduce((sum: number, r: any) => sum + r.amount, 0).toFixed(2)}<br>
+          Added to RCM: ${records.filter((r: any) => r.addedToRCM).length}
         </p>
         <p>Best regards,<br>${branchName} Team</p>
       `;
@@ -99,10 +102,10 @@ export default async function handler(req: any, res: any) {
         })),
       });
 
-      res.status(200).json({ success: true });
+      return res.status(200).json({ success: true });
     } catch (err: any) {
       console.error("Error sending email:", err);
-      res.status(500).json({ error: "Failed to send email", details: err.message });
+      return res.status(500).json({ error: "Failed to send email", details: err.message });
     }
   });
 }
