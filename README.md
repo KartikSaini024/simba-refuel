@@ -1,40 +1,92 @@
+# Refuel Management System – User Guide
 
+## Overview
+This web application streamlines the management of vehicle refueling records for organizations with multiple branches. It supports staff management, record keeping, PDF reporting, and secure email delivery of daily refuel summaries.
 
-**Use your preferred IDE**
+---
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Getting Started
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Login
+Access the app using your provided credentials. Roles and permissions are assigned by your administrator.
 
-Follow these steps:
+### Branch Selection
+Select your branch from the dropdown to view or manage refuel records specific to your location.
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+---
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Main Features
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 1. Refuel Record Entry
+- Add new refuel records by entering:
+  - Vehicle registration  
+  - Reservation number  
+  - Amount  
+  - Receipt photo upload  
+- Select the staff member who performed the refueling.  
+- Mark whether the record has been added to **RCM (Remote Control Management)**.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+---
 
-**Edit a file directly in GitHub**
+### 2. Staff Management
+- **Admins** can add or remove staff members for each branch.  
+- Staff names are used for record attribution and reporting.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+### 3. Search & Filter
+- Search refuel records by:
+  - Vehicle registration  
+  - Reservation number  
+  - Refueled by  
+  - RCM status  
+  - Date range  
+- View results in a sortable table with receipt image previews.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
+
+### 4. PDF Report Generation
+- Generate a **PDF summary** of refuel records for a selected date and branch.  
+- Include:
+  - Staff who checked the list  
+  - Digital signature  
+- Download or email the PDF report.
+
+---
+
+### 5. Email Reports
+- Send daily refuel reports to designated recipients.  
+- Attach PDF summaries and receipt images.  
+- Email sending can be tested locally (see below).
+
+---
+
+## Roles & Permissions
+
+### **Admin**
+- Add/remove staff members  
+- Manage all branches  
+- Generate and send PDF/email reports  
+- View all refuel records  
+
+### **Staff**
+- Add new refuel records  
+- Upload receipt images  
+- View and search records for their branch  
+- Cannot manage staff or send reports  
+
+### **Viewer**
+- View refuel records and reports  
+- Cannot add/edit records or manage staff  
+
+---
+
+## Receipt Image Handling
+- Receipt images are uploaded and stored securely.  
+- Preview images directly in the search results table.  
+- If an image fails to load, a placeholder is shown.
+
+---
 
 ## What technologies are used for this project?
 
@@ -55,4 +107,4 @@ In `src/components/EmailReportSender.tsx`, there is a comment showing how to swi
 
 - By default, the frontend calls the serverless function at `/api/sendReportEmail`.
 - To test with your local server (e.g., `http://localhost:5000/api/sendReportEmail`), uncomment or modify the fetch URL in `handleSendEmail` accordingly.
-- Make sure your local server (`server.js`) is running and the environment variables (`GMAIL_USER` and `GMAIL_PASS`) are set in your `.env` file.
+- Make sure your local server (`server.js`) is also running ('node server.js' in cmd line) and the environment variables (`GMAIL_USER` and `GMAIL_PASS`) are set in your `.env` file.
