@@ -53,11 +53,11 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
   const { toast } = useToast();
 
   const searchFieldOptions = [
-    { value: 'rego', label: 'Vehicle Registration' },
-    { value: 'reservation_number', label: 'Reservation Number' },
-    { value: 'refuelled_by', label: 'Refuelled By' },
-    { value: 'created_by', label: 'Created By' },
-    { value: 'rcm_status', label: 'RCM Status' }
+  { value: 'rego', label: 'Vehicle Registration' },
+  { value: 'reservation_number', label: 'Reservation Number' },
+  { value: 'refuelled_by', label: 'Refuelled By' },
+  // { value: 'created_by', label: 'Created By' }, // commented out
+  { value: 'rcm_status', label: 'RCM Status' }
   ];
 
   const handleSearch = async () => {
@@ -94,10 +94,12 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
         if (rcmStatus !== 'all') {
           query = query.eq('added_to_rcm', rcmStatus === 'true');
         }
-      } else if (searchField === 'created_by') {
-        // Search by first or last name in joined profile (Supabase PostgREST syntax)
-        query = query.or(`(profiles.first_name.ilike.%${searchValue}%,profiles.last_name.ilike.%${searchValue}%)`);
-      } else if (searchField === 'rego') {
+      }
+      // else if (searchField === 'created_by') {
+      //   // Search by first or last name in joined profile (Supabase PostgREST syntax)
+      //   query = query.or(`(profiles.first_name.ilike.%${searchValue}%,profiles.last_name.ilike.%${searchValue}%)`);
+      // }
+      else if (searchField === 'rego') {
         query = query.ilike('rego', `%${searchValue.toUpperCase()}%`);
       } else {
         query = query.ilike(searchField, `%${searchValue}%`);
@@ -319,7 +321,7 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                                 </DialogHeader>
                                 <div className="flex justify-center">
                                   <img
-                                    src={supabase.storage.from('refuel-receipts').getPublicUrl(record.receipt_photo_url).data.publicUrl}
+                                    src={supabase.storage.from('refuel-receipts').getPublicUrl(record.receipt_photo_url.replace(/^.*refuel-receipts\//, "")).data.publicUrl}
                                     alt={`Receipt for ${record.rego}`}
                                     className="max-w-full max-h-96 object-contain rounded-md"
                                     onError={(e) => {
