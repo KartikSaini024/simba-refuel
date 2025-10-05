@@ -1,7 +1,7 @@
 # Refuel Management System – User Guide
 
 ## Overview
-This web application streamlines the management of vehicle refueling records for organizations with multiple branches. It supports staff management, record keeping, PDF reporting, and secure email delivery of daily refuel summaries.
+This web application streamlines the management of vehicle refueling records for the company with support for multiple branches. It supports staff management, record keeping, PDF reporting, and secure email delivery of daily refuel summaries.
 
 ---
 
@@ -74,10 +74,6 @@ Select your branch from the dropdown to view or manage refuel records specific t
 - Upload receipt images  
 - View and search records for their branch  
 - Cannot manage staff or send reports  
-
-### **Viewer**
-- View refuel records and reports  
-- Cannot add/edit records or manage staff  
 
 ---
 
