@@ -44,24 +44,32 @@ export default async function handler(req: any, res: any) {
         : [];
 
       // Build HTML table
+      // Sort records by createdAt (ascending)
+      records.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      // Build HTML table
       const tableRows = records
-        .map(
-          (r: any) => `
-          <tr>
-            <td>${r.reservationNumber}</td>
-            <td>${r.rego}</td>
-            <td>${r.addedToRCM ? "Yes" : "No"}</td>
-            <td>$${r.amount.toFixed(2)}</td>
-            <td>${r.refuelledBy}</td>
-            <td>${new Date(r.createdAt).toLocaleTimeString()}</td>
-          </tr>
-        `
-        )
+        .map((r: any) => {
+          const timeStr = new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+          return `
+            <tr>
+              <td>${r.reservationNumber}</td>
+              <td>${r.rego}</td>
+              <td>${r.addedToRCM ? "Yes" : "No"}</td>
+              <td>$${r.amount.toFixed(2)}</td>
+              <td>${r.refuelledBy}</td>
+              <td>${timeStr}</td>
+            </tr>
+          `;
+        })
         .join("");
 
+      // Use first record's createdAt for report date
+      const reportDate = records.length > 0 ? new Date(records[0].createdAt) : new Date(date);
+      const dateStr = reportDate.toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' });
       const html = `
         <p>Dear Team,</p>
-        <p>Please find the refuel list for <b>${branchName}</b> on <b>${date}</b>.</p>
+        <p>Please find the refuel list for <b>${branchName}</b> on <b>${dateStr}</b>.</p>
         <table border="1" cellpadding="6" style="border-collapse:collapse;">
           <thead>
             <tr>
