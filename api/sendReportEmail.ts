@@ -20,14 +20,15 @@ export default async function handler(req: any, res: any) {
     if (err) return res.status(500).json({ error: "Error parsing form data", details: err });
 
     try {
-      // Normalize fields from FormData (they may come as arrays)
-      const to = Array.isArray(fields.to) ? fields.to[0] : fields.to;
-      const ccValue = Array.isArray(fields.cc) ? fields.cc[0] : fields.cc;
-      const subject = Array.isArray(fields.subject) ? fields.subject[0] : fields.subject;
-      const message = Array.isArray(fields.message) ? fields.message[0] : fields.message;
-      const branchName = Array.isArray(fields.branchName) ? fields.branchName[0] : fields.branchName;
-      const date = Array.isArray(fields.date) ? fields.date[0] : fields.date;
-      const records = fields.records ? JSON.parse(Array.isArray(fields.records) ? fields.records[0] : fields.records) : [];
+  // Normalize fields from FormData (they may come as arrays)
+  const to = Array.isArray(fields.to) ? fields.to[0] : fields.to;
+  const ccValue = Array.isArray(fields.cc) ? fields.cc[0] : fields.cc;
+  const subject = Array.isArray(fields.subject) ? fields.subject[0] : fields.subject;
+  const message = Array.isArray(fields.message) ? fields.message[0] : fields.message;
+  const branchName = Array.isArray(fields.branchName) ? fields.branchName[0] : fields.branchName;
+  const date = Array.isArray(fields.date) ? fields.date[0] : fields.date;
+  const timezone = Array.isArray(fields.timezone) ? fields.timezone[0] : fields.timezone || "Australia/Sydney";
+  const records = fields.records ? JSON.parse(Array.isArray(fields.records) ? fields.records[0] : fields.records) : [];
 
       if (!to || !subject || !records || !branchName || !date) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -50,7 +51,12 @@ export default async function handler(req: any, res: any) {
       // Build HTML table
       const tableRows = records
         .map((r: any) => {
-          const timeStr = new Date(r.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+          const timeStr = new Date(r.createdAt).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+            timeZone: timezone
+          });
           return `
             <tr>
               <td>${r.reservationNumber}</td>
