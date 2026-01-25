@@ -36,7 +36,13 @@ export const useUserBranches = () => {
         .order('name');
 
       if (error) throw error;
-      setAllBranches(data || []);
+      setAllBranches((data || []).map(b => ({
+        ...b,
+        location: b.location ?? '',
+        is_active: b.is_active ?? false,
+        created_at: b.created_at ?? '',
+        updated_at: b.updated_at ?? ''
+      })));
     } catch (error) {
       console.error('Error fetching all branches:', error);
     }
@@ -56,15 +62,22 @@ export const useUserBranches = () => {
           .order('name');
 
         if (error) throw error;
-        setAccessibleBranches(data || []);
+        setAccessibleBranches((data || []).map(b => ({
+          ...b,
+          location: b.location ?? '',
+          is_active: b.is_active ?? false,
+          created_at: b.created_at ?? '',
+          updated_at: b.updated_at ?? ''
+        })));
         return;
       }
 
       // Collect branch ids from user_branch_access + include primary branch if present
-      const userId = (profile as any).user_id || profile.id;
+      const userId = profile.user_id;
 
-      let accessRows: any[] | null = null;
+      let accessRows: { branch_id: string }[] | null = null;
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data, error } = await (supabase as any)
           .from('user_branch_access')
           .select('branch_id')
@@ -93,7 +106,13 @@ export const useUserBranches = () => {
         .order('name');
 
       if (branchesError) throw branchesError;
-      setAccessibleBranches(branches || []);
+      setAccessibleBranches((branches || []).map(b => ({
+        ...b,
+        location: b.location ?? '',
+        is_active: b.is_active ?? false,
+        created_at: b.created_at ?? '',
+        updated_at: b.updated_at ?? ''
+      })));
     } catch (error) {
       console.error('Error fetching accessible branches:', error);
       toast({
@@ -107,7 +126,8 @@ export const useUserBranches = () => {
   const fetchUserBranchAccess = async (userId?: string) => {
     if (profile?.role !== 'admin') return;
     try {
-      const targetUserId = userId || (profile as any).user_id || profile.id;
+      const targetUserId = userId || profile.user_id;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: accessRows, error } = await (supabase as any)
         .from('user_branch_access')
         .select('id, user_id, branch_id, created_at')
@@ -147,6 +167,7 @@ export const useUserBranches = () => {
 
   const addBranchAccess = async (userId: string, branchId: string) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('user_branch_access')
         .insert([{ user_id: userId, branch_id: branchId }])
@@ -171,6 +192,7 @@ export const useUserBranches = () => {
 
   const removeBranchAccess = async (accessId: string, userId?: string) => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('user_branch_access')
         .delete()

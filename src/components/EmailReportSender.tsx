@@ -53,12 +53,14 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
       formData.append('branchName', branchName);
       formData.append('date', new Date().toISOString());
       formData.append('records', JSON.stringify(records));
-      attachments.forEach((file, idx) => {
+
+      // Append attachments if any
+      attachments.forEach((file) => {
         formData.append('attachments', file, file.name);
       });
 
-      const res = await fetch('/api/sendReportEmail', {  // for deployment with  API route
-      // const res = await fetch('http://localhost:5000/api/sendReportEmail', {   //for local testing with separate server
+      // Point to our unified API endpoint (handled by Vite Plugin locally or Vercel Function in prod)
+      const res = await fetch('/api/send-email', {
         method: 'POST',
         body: formData,
       });
@@ -72,17 +74,14 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         setAttachments([]);
       } else {
         const data = await res.json();
-        toast({
-          variant: "destructive",
-          title: "Failed to send email",
-          description: data?.error || "An error occurred sending the email.",
-        });
+        throw new Error(data?.error || "Failed to send email");
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Email send error:', err);
       toast({
         variant: "destructive",
-        title: "Network Error",
-        description: "Could not send email. Please try again.",
+        title: "Failed to send email",
+        description: err.message || "An error occurred sending the email.",
       });
     } finally {
       setIsLoading(false);
@@ -115,30 +114,30 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         <div className="space-y-4">
 
           <div className="space-y-2">
-          <div className="space-y-2">
-            <Label htmlFor="attachments">Attachments</Label>
-            <input
-              id="attachments"
-              type="file"
-              multiple
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
-              disabled={isLoading}
-            />
-            {attachments.length > 0 && (
-              <ul className="mt-2 space-y-1 text-xs">
-                {attachments.map((file, idx) => (
-                  <li key={file.name + idx} className="flex items-center gap-2">
-                    <span>{file.name}</span>
-                    <Button type="button" size="icon" variant="ghost" onClick={() => removeAttachment(idx)} disabled={isLoading}>
-                      &times;
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="attachments">Attachments</Label>
+              <input
+                id="attachments"
+                type="file"
+                multiple
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                disabled={isLoading}
+              />
+              {attachments.length > 0 && (
+                <ul className="mt-2 space-y-1 text-xs">
+                  {attachments.map((file, idx) => (
+                    <li key={file.name + idx} className="flex items-center gap-2">
+                      <span>{file.name}</span>
+                      <Button type="button" size="icon" variant="ghost" onClick={() => removeAttachment(idx)} disabled={isLoading}>
+                        &times;
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <Label htmlFor="email">Recipient Email</Label>
             <Input
               id="email"

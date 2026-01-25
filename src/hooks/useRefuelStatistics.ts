@@ -64,19 +64,19 @@ export const useRefuelStatistics = () => {
       if (error) throw error;
 
       const records = data || [];
-      
+
       // Calculate statistics
       const totalRecords = records.length;
       const totalAmount = records.reduce((sum, record) => sum + Number(record.amount), 0);
-      
+
       // Group by branch
       const branchMap = new Map();
       records.forEach(record => {
         const branchKey = record.branch_id;
         if (!branchMap.has(branchKey)) {
           branchMap.set(branchKey, {
-          branchName: (record as any).branches?.name || 'Unknown',
-          branchCode: (record as any).branches?.code || 'N/A',
+            branchName: (record as any).branches?.name || 'Unknown',
+            branchCode: (record as any).branches?.code || 'N/A',
             recordCount: 0,
             totalAmount: 0,
           });
@@ -90,9 +90,10 @@ export const useRefuelStatistics = () => {
       const dateMap = new Map();
       const dateBranchMap = new Map(); // For daily totals by branch
       records.forEach(record => {
+        if (!record.created_at) return;
         const date = record.created_at.split('T')[0];
         const branchCode = (record as any).branches?.code || 'Unknown';
-        
+
         // Overall daily totals
         if (!dateMap.has(date)) {
           dateMap.set(date, {
@@ -104,7 +105,7 @@ export const useRefuelStatistics = () => {
         const day = dateMap.get(date);
         day.recordCount++;
         day.totalAmount += Number(record.amount);
-        
+
         // Daily totals by branch
         if (!dateBranchMap.has(date)) {
           dateBranchMap.set(date, {

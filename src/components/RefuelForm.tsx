@@ -17,8 +17,8 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface RefuelFormProps {
-  onSubmit: (data: RefuelFormData & { 
-    addedToRCM: boolean; 
+  onSubmit: (data: RefuelFormData & {
+    addedToRCM: boolean;
     createdAt: Date;
     createdBy: string;
   }) => Promise<void>;
@@ -26,10 +26,10 @@ interface RefuelFormProps {
   isSubmitting?: boolean;
 }
 
-const RefuelForm: React.FC<RefuelFormProps> = ({ 
-  onSubmit, 
-  staffMembers, 
-  isSubmitting = false 
+const RefuelForm: React.FC<RefuelFormProps> = ({
+  onSubmit,
+  staffMembers,
+  isSubmitting = false
 }) => {
   const { toast } = useToast();
   const { user } = useAuthContext();
@@ -79,7 +79,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationResult = validateRefuelForm(formData);
     if (!validationResult.isValid) {
       toast({
@@ -91,11 +91,15 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
     }
 
     let photoUrl = formData.receiptPhotoUrl;
-    
+
     // Upload photo if one is selected
     if (selectedPhoto) {
-      photoUrl = await uploadPhoto(selectedPhoto);
-      if (!photoUrl) return; // Upload failed
+      const uploadedUrl = await uploadPhoto(selectedPhoto);
+      if (uploadedUrl) {
+        photoUrl = uploadedUrl;
+      } else {
+        return; // Upload failed
+      }
     }
 
     await onSubmit({
@@ -105,7 +109,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       createdAt: selectedDate,
       createdBy: user?.id || ''
     });
-    
+
     // Reset form
     setFormData({
       rego: '',
@@ -258,14 +262,14 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
             </div>
           </div>
 
-          <PhotoUpload 
+          <PhotoUpload
             onPhotoSelected={handlePhotoSelected}
             selectedFile={selectedPhoto}
           />
 
-          <Button 
-            type="submit" 
-            className="w-full" 
+          <Button
+            type="submit"
+            className="w-full"
             disabled={isSubmitting || isUploading}
           >
             {isSubmitting ? 'Adding Record...' : 'Add Record'}

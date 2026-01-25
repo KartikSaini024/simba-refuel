@@ -57,7 +57,7 @@ const Index = () => {
       setSelectedBranchId(branchParam);
       return;
     }
-    
+
     if (selectedBranchId && user && profile?.status === 'approved') {
       loadBranchRecords();
       loadBranchInfo();
@@ -92,10 +92,10 @@ const Index = () => {
       // Create start and end dates in local timezone, then convert to UTC for database query
       const startOfDay = new Date(selectedDate);
       startOfDay.setHours(0, 0, 0, 0);
-      
+
       const endOfDay = new Date(selectedDate);
       endOfDay.setHours(23, 59, 59, 999);
-      
+
       const { data, error } = await supabase
         .from('refuel_records')
         .select('*')
@@ -112,9 +112,9 @@ const Index = () => {
         amount: record.amount,
         refuelledBy: record.refuelled_by,
         reservationNumber: record.reservation_number,
-        addedToRCM: record.added_to_rcm,
-        createdAt: new Date(record.created_at),
-        receiptPhotoUrl: record.receipt_photo_url,
+        addedToRCM: record.added_to_rcm ?? false,
+        createdAt: new Date(record.created_at || new Date()),
+        receiptPhotoUrl: record.receipt_photo_url ?? undefined,
       }));
 
       setRecords(transformedRecords);
@@ -130,8 +130,8 @@ const Index = () => {
     }
   };
 
-  const addRecord = async (recordData: RefuelFormData & { 
-    addedToRCM: boolean; 
+  const addRecord = async (recordData: RefuelFormData & {
+    addedToRCM: boolean;
     createdAt: Date;
     createdBy: string;
   }) => {
@@ -158,7 +158,7 @@ const Index = () => {
 
       // Reload records to reflect the new addition
       await loadBranchRecords();
-      
+
       toast({
         title: "Record Added",
         description: `Refuel record for ${recordData.rego} has been added successfully.`,
@@ -178,7 +178,7 @@ const Index = () => {
 
     try {
       const updateObject: any = {};
-      
+
       if (updatedData.rego) updateObject.rego = updatedData.rego.toUpperCase();
       if (updatedData.amount) updateObject.amount = updatedData.amount;
       if (updatedData.reservationNumber) updateObject.reservation_number = updatedData.reservationNumber;
@@ -195,10 +195,10 @@ const Index = () => {
 
       if (error) throw error;
 
-      setRecords(prev => prev.map(record => 
+      setRecords(prev => prev.map(record =>
         record.id === id ? { ...record, ...updatedData } : record
       ));
-      
+
       toast({
         title: "Record Updated",
         description: "The refuel record has been updated successfully.",
@@ -225,7 +225,7 @@ const Index = () => {
       if (error) throw error;
 
       setRecords(prev => prev.filter(record => record.id !== id));
-      
+
       toast({
         title: "Record Removed",
         description: "The refuel record has been removed successfully.",
@@ -275,7 +275,7 @@ const Index = () => {
                 <span className="text-sm font-medium">{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <BranchSelector 
+                <BranchSelector
                   selectedBranchId={selectedBranchId}
                   onBranchChange={setSelectedBranchId}
                   className="w-48"
@@ -310,7 +310,7 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <BranchSelector 
+              <BranchSelector
                 selectedBranchId={selectedBranchId}
                 onBranchChange={setSelectedBranchId}
                 className="w-full"
@@ -362,7 +362,7 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-card p-6 rounded-lg shadow-md border border-success/10">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-success/10 rounded-lg">
@@ -376,7 +376,7 @@ const Index = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="bg-card p-6 rounded-lg shadow-md border border-accent/10">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-accent/10 rounded-lg">
@@ -395,36 +395,36 @@ const Index = () => {
             {/* Forms and Management */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
-                <RefuelForm 
-                  onSubmit={addRecord} 
-                  staffMembers={staff} 
+                <RefuelForm
+                  onSubmit={addRecord}
+                  staffMembers={staff}
                 />
-                <RefuelTable 
-                  records={records} 
+                <RefuelTable
+                  records={records}
                   onRemoveRecord={removeRecord}
                   onUpdateRecord={updateRecord}
                   selectedDate={selectedDate}
                   staff={staff}
                 />
               </div>
-              
+
               <div className="space-y-6">
-                <StaffManagement 
-                  staff={staff} 
-                  onAddStaff={addStaff} 
+                <StaffManagement
+                  staff={staff}
+                  onAddStaff={addStaff}
                   onRemoveStaff={removeStaff}
                   loading={staffLoading}
                 />
                 <div className="space-y-4">
-                  <PDFGenerator 
-                    records={records} 
+                  <PDFGenerator
+                    records={records}
                     staff={staff}
                     branchName={selectedBranchName}
                     branchId={selectedBranchId}
                     reportDate={selectedDate}
                   />
-                  <EmailReportSender 
-                    records={records} 
+                  <EmailReportSender
+                    records={records}
                     branchName={selectedBranchName}
                     date={selectedDate}
                   />

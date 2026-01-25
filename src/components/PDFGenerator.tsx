@@ -204,7 +204,7 @@ export const PDFGenerator = ({ records, staff, branchName, reportDate }: PDFGene
         record.addedToRCM ? "Yes" : "No",
         `$${record.amount.toFixed(2)}`,
         record.refuelledBy,
-        format(record.createdAt, "HH:mm"),
+        format(new Date(record.createdAt), "HH:mm"),
         record.receiptImage ? "Yes" : "No"
       ]);
 

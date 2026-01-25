@@ -16,14 +16,14 @@ import simbaLogo from '@/assets/simba-logo-hd.png';
 
 const Auth = () => {
   console.log('Auth component rendering...');
-  
+
   const navigate = useNavigate();
   const { signUp, signIn, signOut, user, profile } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
-  
+
   console.log('Auth state:', { user: !!user, profile: profile?.status, loading });
-  
+
   // Sign up form state
   const [signUpData, setSignUpData] = useState({
     email: '',
@@ -67,9 +67,15 @@ const Auth = () => {
         console.error('Error fetching branches:', error);
         return;
       }
-      
+
       console.log('Branches fetched:', data?.length || 0);
-      setBranches(data || []);
+      setBranches((data || []).map((b: any) => ({
+        ...b,
+        location: b.location ?? '',
+        is_active: b.is_active ?? false,
+        created_at: b.created_at ?? '',
+        updated_at: b.updated_at ?? ''
+      })));
     } catch (error) {
       console.error('Error fetching branches:', error);
     }
@@ -100,13 +106,13 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (!validateEmail(signInData.email)) {
       handleError('Please enter a valid email address');
       return;
     }
-    
+
     if (!signInData.password) {
       handleError('Please enter your password');
       return;
@@ -120,7 +126,7 @@ const Auth = () => {
         .select('status, role')
         .eq('user_id', data.user.id)
         .maybeSingle();
-      
+
       if (profileData?.status === 'pending') {
         alert('Your account is pending approval. Please contact an administrator.');
       } else if (profileData?.status === 'rejected') {
@@ -156,9 +162,9 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={signOut} 
-              variant="outline" 
+            <Button
+              onClick={signOut}
+              variant="outline"
               className="w-full"
             >
               Change Account
@@ -181,9 +187,9 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={signOut} 
-              variant="outline" 
+            <Button
+              onClick={signOut}
+              variant="outline"
               className="w-full"
             >
               Change Account
@@ -193,7 +199,7 @@ const Auth = () => {
       </div>
     );
   }
-  
+
   console.log('Rendering Auth main form');
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -209,7 +215,7 @@ const Auth = () => {
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -237,7 +243,7 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -260,7 +266,7 @@ const Auth = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="signupEmail">Email</Label>
                   <Input
@@ -271,7 +277,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="signupPassword">Password</Label>
                   <Input
@@ -282,7 +288,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <Input
@@ -293,7 +299,7 @@ const Auth = () => {
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="role">Requested Role</Label>
                   <Select value={signUpData.role} onValueChange={(value: 'staff' | 'admin') => setSignUpData(prev => ({ ...prev, role: value }))}>
@@ -306,7 +312,7 @@ const Auth = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label>Requested Branch Access</Label>
                   {signUpData.role === 'admin' ? (
@@ -341,7 +347,7 @@ const Auth = () => {
                     <p className="text-xs text-red-500">Please select a branch</p>
                   )}
                 </div>
-                
+
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Sign Up'}
                 </Button>

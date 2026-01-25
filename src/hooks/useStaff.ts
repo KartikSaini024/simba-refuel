@@ -9,7 +9,7 @@ export const useStaff = (branchId?: string) => {
 
   const fetchStaff = async () => {
     if (!branchId) return;
-    
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -26,7 +26,7 @@ export const useStaff = (branchId?: string) => {
       }));
 
       setStaff(formattedStaff);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching staff:', error);
       toast({
         title: 'Error',
@@ -62,12 +62,12 @@ export const useStaff = (branchId?: string) => {
 
       const newStaff = { id: data.id, name: data.name };
       setStaff(prev => [...prev, newStaff]);
-      
+
       toast({
         title: 'Success',
         description: 'Staff member added successfully',
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding staff:', error);
       toast({
         title: 'Error',
@@ -87,12 +87,12 @@ export const useStaff = (branchId?: string) => {
       if (error) throw error;
 
       setStaff(prev => prev.filter(s => s.id !== id));
-      
+
       toast({
         title: 'Success',
         description: 'Staff member removed successfully',
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error removing staff:', error);
       toast({
         title: 'Error',

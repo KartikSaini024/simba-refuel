@@ -5,29 +5,29 @@ export interface DatabaseRefuelRecord {
   amount: number;
   refuelled_by: string;
   reservation_number: string;
-  added_to_rcm: boolean;
+  added_to_rcm: boolean | null;
   created_by: string;
-  created_at: string;
-  updated_at: string;
-  receipt_photo_url?: string;
+  created_at: string | null;
+  updated_at: string | null;
+  receipt_photo_url?: string | null;
 }
 
 export interface DatabaseStaff {
   id: string;
   name: string;
   branch_id: string;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Branch {
   id: string;
   code: string;
   name: string;
-  location: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  location: string | null;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 export interface Profile {

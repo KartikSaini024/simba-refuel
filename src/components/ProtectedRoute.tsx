@@ -9,10 +9,10 @@ interface ProtectedRouteProps {
   requireApproved?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
   requireAdmin = false,
-  requireApproved = true 
+  requireApproved = true
 }) => {
   const { user, profile, loading } = useAuthContext();
   const location = useLocation();

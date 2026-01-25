@@ -94,7 +94,13 @@ const AdminDashboard = () => {
         .order('name');
 
       if (error) throw error;
-      setBranches(data || []);
+      setBranches((data || []).map((b: any) => ({
+        ...b,
+        location: b.location ?? '',
+        is_active: b.is_active ?? false,
+        created_at: b.created_at ?? '',
+        updated_at: b.updated_at ?? ''
+      })));
     } catch (error) {
       handleError(error, 'Failed to fetch branches');
     } finally {
@@ -193,7 +199,7 @@ const AdminDashboard = () => {
   const updateUserRole = async (userId: string, newRole: 'staff' | 'admin') => {
     try {
       const updateData: any = { role: newRole };
-      
+
       // If promoting to super admin, remove branch assignment
       if (newRole === 'admin') {
         updateData.branch_id = null;
@@ -554,7 +560,7 @@ const AdminDashboard = () => {
 
         <TabsContent value="refuel" className="space-y-6">
           <RefuelRecordSearch branches={branches} />
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Branch Operations</CardTitle>
@@ -606,7 +612,7 @@ const AdminDashboard = () => {
             </DialogTitle>
           </DialogHeader>
           {selectedUserForBranchManagement && (
-            <UserBranchManagement 
+            <UserBranchManagement
               userId={selectedUserForBranchManagement.user_id}
               userEmail={selectedUserForBranchManagement.email}
               onClose={() => setSelectedUserForBranchManagement(null)}
