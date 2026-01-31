@@ -203,6 +203,22 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
   };
 
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({ title: "Copied!", description: `Reservation ${text} copied to clipboard.` });
+    } catch (err) {
+      console.error('Failed to copy:', err);
+      toast({ variant: "destructive", title: "Copy Failed", description: "Could not copy to clipboard." });
+    }
+  };
+
+  const selectReservation = (resNo: string) => {
+    setFormData(prev => ({ ...prev, reservationNumber: resNo }));
+    setShowResults(false);
+    toast({ title: "Reservation Selected", description: `Reservation #${resNo} added to form.` });
+  };
+
   return (
     <Card className="bg-gradient-to-br from-background to-muted/20 shadow-elegant border">
       <CardHeader>
@@ -249,22 +265,54 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                             <th className="p-2 text-left">Res #</th>
                             <th className="p-2 text-left">Customer</th>
                             <th className="p-2 text-left">Vehicle</th>
-                            <th className="p-2 text-right">Action</th>
+                            <th className="p-2 text-center">View</th>
+                            <th className="p-2 text-center">Use</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {searchResults.map((res: any) => (
-                            <tr key={res.resNo} className="border-t">
-                              <td className="p-2 font-medium">{res.resNo}</td>
-                              <td className="p-2">{res.customer}</td>
-                              <td className="p-2">{res.vehicle}</td>
-                              <td className="p-2 text-right">
-                                <Button size="sm" onClick={() => openReservation(res.resNo)}>
-                                  Open
-                                </Button>
-                              </td>
-                            </tr>
-                          ))}
+                          {(() => {
+                            // Find the index of the first record containing "Returned"
+                            const firstReturnedIndex = searchResults.findIndex((res: any) =>
+                              JSON.stringify(res).toLowerCase().includes('returned')
+                            );
+
+                            return searchResults.map((res: any, index: number) => {
+                              const isReturned = index === firstReturnedIndex;
+
+                              return (
+                                <tr
+                                  key={res.resNo}
+                                  className={cn(
+                                    "border-t transition-colors",
+                                    isReturned ? "animate-pulse-green" : "hover:bg-muted/50"
+                                  )}
+                                >
+                                  <td className="p-2 font-medium">
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(res.resNo)}
+                                      className="hover:underline flex items-center gap-1 text-primary focus:outline-none"
+                                      title="Click to copy"
+                                    >
+                                      {res.resNo}
+                                    </button>
+                                  </td>
+                                  <td className="p-2">{res.customer}</td>
+                                  <td className="p-2">{res.vehicle.split(' ')[0]}</td>
+                                  <td className="p-2 text-center">
+                                    <Button size="sm" onClick={() => openReservation(res.resNo)}>
+                                      Open
+                                    </Button>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <Button size="sm" variant="outline" onClick={() => selectReservation(res.resNo)}>
+                                      Add
+                                    </Button>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
