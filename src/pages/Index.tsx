@@ -426,6 +426,7 @@ const Index = () => {
                   <EmailReportSender
                     records={records}
                     branchName={selectedBranchName}
+                    branchId={selectedBranchId!}
                     date={selectedDate}
                   />
                 </div>
