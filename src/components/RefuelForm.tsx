@@ -10,7 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { validateRefuelForm } from '@/utils/validation';
 import { RefuelFormData } from '@/types/refuel';
 import PhotoUpload from './PhotoUpload';
-import { Plus, CalendarIcon } from 'lucide-react';
+import { Plus, CalendarIcon, Search } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -130,6 +131,78 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
     }
   };
 
+  // --- RCM Search Logic ---
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
+  const handleRcmSearch = async () => {
+    if (!formData.rego) {
+      toast({ variant: "destructive", title: "Registration Required", description: "Please enter a Rego first." });
+      return;
+    }
+
+    const cookies = localStorage.getItem('rcm_cookies');
+    console.log("RefuelForm: Retrieving cookies...", cookies ? "Found" : "Not Found");
+
+    if (!cookies) {
+      toast({
+        variant: "destructive",
+        title: "Not Connected",
+        description: "Please run 'Test RCM' from the menu first to authenticate."
+      });
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchResults([]);
+
+    try {
+      // Use today's date formatted as dd/MM/yyyy
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const yyyy = today.getFullYear();
+      const dateStr = `${dd}/${mm}/${yyyy}`;
+
+      const res = await fetch('/api/rcm-reservation-search', {
+        method: 'POST',
+        body: JSON.stringify({ rego: formData.rego, cookies, dateStr })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.results) {
+        // Sort by Reservation Number descending and take top 5
+        const sortedResults = data.results.sort((a: any, b: any) => parseInt(b.resNo) - parseInt(a.resNo));
+        setSearchResults(sortedResults.slice(0, 5));
+
+        setShowResults(true);
+        if (data.results.length === 0) {
+          toast({ title: "No Results", description: "No reservations found for this rego today." });
+        }
+      } else {
+        throw new Error(data.error || "Unknown error");
+      }
+
+    } catch (err: any) {
+      console.error("Search failed", err);
+      toast({
+        variant: "destructive",
+        title: "Search Failed",
+        description: err.message || "Could not fetch results."
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const openReservation = (resNo: string) => {
+    // Open in new popup window as per requirement
+    window.open(`https://bookings.rentalcarmanager.com/reservations/update/booking/${resNo}`, '_blank', 'width=1200,height=800');
+  };
+
+
   return (
     <Card className="bg-gradient-to-br from-background to-muted/20 shadow-elegant border">
       <CardHeader>
@@ -146,14 +219,61 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="rego">Vehicle Registration</Label>
-              <Input
-                id="rego"
-                value={formData.rego}
-                onChange={(e) => setFormData({ ...formData, rego: e.target.value.toUpperCase() })}
-                placeholder="Enter registration"
-                required
-              />
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    id="rego"
+                    value={formData.rego}
+                    onChange={(e) => setFormData({ ...formData, rego: e.target.value.toUpperCase() })}
+                    placeholder="Enter registration"
+                    required
+                  />
+                </div>
+                <Button type="button" variant="outline" size="icon" onClick={handleRcmSearch} disabled={isSearching} title="Search RCM">
+                  {isSearching ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : <Search className="h-4 w-4" />}
+                </Button>
+              </div>
             </div>
+
+            <Dialog open={showResults} onOpenChange={setShowResults}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Reservation Search Results</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4">
+                  {searchResults.length > 0 ? (
+                    <div className="border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted">
+                          <tr>
+                            <th className="p-2 text-left">Res #</th>
+                            <th className="p-2 text-left">Customer</th>
+                            <th className="p-2 text-left">Vehicle</th>
+                            <th className="p-2 text-right">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {searchResults.map((res: any) => (
+                            <tr key={res.resNo} className="border-t">
+                              <td className="p-2 font-medium">{res.resNo}</td>
+                              <td className="p-2">{res.customer}</td>
+                              <td className="p-2">{res.vehicle}</td>
+                              <td className="p-2 text-right">
+                                <Button size="sm" onClick={() => openReservation(res.resNo)}>
+                                  Open
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-4">No reservations found.</p>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
 
             <div className="space-y-2">
               <Label htmlFor="amount">Amount ($)</Label>
