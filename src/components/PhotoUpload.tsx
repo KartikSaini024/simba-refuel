@@ -13,10 +13,10 @@ interface PhotoUploadProps {
   selectedFile?: File | null;
 }
 
-const PhotoUpload: React.FC<PhotoUploadProps> = ({ 
-  onPhotoSelected, 
-  currentPhotoUrl, 
-  selectedFile 
+const PhotoUpload: React.FC<PhotoUploadProps> = ({
+  onPhotoSelected,
+  currentPhotoUrl,
+  selectedFile
 }) => {
   const [preview, setPreview] = useState<string | null>(currentPhotoUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,25 +25,35 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
 
+  // Reset preview when selectedFile is cleared parent-side
+  React.useEffect(() => {
+    if (!selectedFile && !currentPhotoUrl) {
+      setPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [selectedFile, currentPhotoUrl]);
+
   const startCamera = async () => {
     try {
       // Check if we're in a secure context (HTTPS)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error('Camera access requires a secure connection (HTTPS)');
       }
-      
-      const constraints = { 
-        video: { 
+
+      const constraints = {
+        video: {
           facingMode: facingMode,
           width: { ideal: 1280 },
           height: { ideal: 720 }
-        } 
+        }
       };
-      
+
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       setStream(mediaStream);
       setShowCamera(true);
-      
+
       // Wait for the next tick to ensure video element is in DOM
       setTimeout(() => {
         if (videoRef.current) {
@@ -60,7 +70,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               });
             }
           };
-          
+
           // Force play after a short delay if metadata doesn't load
           setTimeout(() => {
             if (videoRef.current && videoRef.current.readyState >= 1) {
@@ -71,15 +81,15 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           }, 500);
         }
       }, 100);
-      
+
     } catch (error) {
       console.error('Error accessing camera:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unable to access camera. Please check permissions.';
       toast({
         variant: "destructive",
         title: "Camera Error",
-        description: errorMessage.includes('secure') ? 
-          'Camera requires HTTPS. Please use file upload instead.' : 
+        description: errorMessage.includes('secure') ?
+          'Camera requires HTTPS. Please use file upload instead.' :
           'Unable to access camera. Please check permissions or use file upload.',
       });
       setShowCamera(false);
@@ -107,7 +117,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
     const video = videoRef.current;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-    
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0);
@@ -154,7 +164,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
   return (
     <div className="space-y-4">
       <Label>Receipt Photo (Optional)</Label>
-      
+
       {showCamera && (
         <Card>
           <CardContent className="p-4 space-y-3">
@@ -206,7 +216,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           </CardContent>
         </Card>
       )}
-      
+
       {preview && !showCamera && (
         <Card>
           <CardContent className="p-4">
@@ -228,7 +238,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           </CardContent>
         </Card>
       )}
-      
+
       {!preview && !showCamera && (
         <div className="flex gap-2">
           <Button
@@ -240,7 +250,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
             <Upload className="h-4 w-4 mr-2" />
             Upload Photo
           </Button>
-          
+
           <Button
             type="button"
             variant="outline"

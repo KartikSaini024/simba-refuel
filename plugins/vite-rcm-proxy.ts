@@ -295,6 +295,7 @@ export default function rcmProxyPlugin(): Plugin {
                                 resNo: string;
                                 customer: string;
                                 vehicle: string;
+                                dropOff: string;
                                 rawHtml: string;
                             }
 
@@ -327,10 +328,42 @@ export default function rcmProxyPlugin(): Plugin {
                                             const customer = clean(cells[4]); // 5th cell
                                             const vehicle = clean(cells[6]);  // 7th cell
 
+                                            // Dynamic Drop Off extraction: Find the date furthest in the future
+                                            // Format examples: "Thu 22/Jan/2026 12:55", "29/Dec/2025"
+                                            let maxDate = 0;
+                                            let dropOff = '';
+
+                                            cells.forEach(cell => {
+                                                const text = clean(cell);
+                                                // Matches dd/MMM/yyyy with optional Day prefix and optional time
+                                                // (?:[A-Z][a-z]{2}\s+)? matches optional "Thu "
+                                                // (\d{1,2}\/[A-Z][a-z]{3}\/\d{4})(?:\s+\d{1,2}:\d{2})? matches 22/Jan/2026 12:55
+                                                const dateMatch = text.match(/(?:[A-Za-z]{3}\s+)?(\d{1,2}\/[A-Za-z]{3}\/\d{4}(?:\s+\d{1,2}:\d{2})?)/);
+
+                                                if (dateMatch) {
+                                                    // Replace / with space for easier parsing: 22 Jan 2026 12:55
+                                                    const dateString = dateMatch[1].replace(/\//g, ' ');
+                                                    const ts = Date.parse(dateString);
+                                                    if (!isNaN(ts)) {
+                                                        if (ts > maxDate) {
+                                                            maxDate = ts;
+                                                            dropOff = text;
+                                                        }
+                                                    }
+                                                }
+                                            });
+
+                                            // Fallback if no date found (though unlikely for valid rows)
+                                            if (!dropOff && cells.length > 10) {
+                                                dropOff = clean(cells[10]);
+                                            }
+
+
                                             results.push({
                                                 resNo,
                                                 customer,
                                                 vehicle,
+                                                dropOff,
                                                 rawHtml: row // Keep raw if needed for debug? Maybe too big.
                                             });
                                         }

@@ -463,7 +463,12 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
 
       <Popover>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="icon" title="Configure Auto-Send">
+          <Button
+            variant={autoSendEnabled ? "default" : "outline"}
+            size="icon"
+            title={autoSendEnabled ? "Auto-Send Enabled" : "Configure Auto-Send"}
+            className={autoSendEnabled ? "bg-green-600 hover:bg-green-700 text-white border-green-600" : ""}
+          >
             <Clock className="h-4 w-4" />
           </Button>
         </PopoverTrigger>

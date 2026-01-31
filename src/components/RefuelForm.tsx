@@ -12,6 +12,7 @@ import { RefuelFormData } from '@/types/refuel';
 import PhotoUpload from './PhotoUpload';
 import { Plus, CalendarIcon, Search } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -252,7 +253,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
             </div>
 
             <Dialog open={showResults} onOpenChange={setShowResults}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-4xl">
                 <DialogHeader>
                   <DialogTitle>Reservation Search Results</DialogTitle>
                 </DialogHeader>
@@ -262,11 +263,12 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                       <table className="w-full text-sm">
                         <thead className="bg-muted">
                           <tr>
-                            <th className="p-2 text-left">Res #</th>
-                            <th className="p-2 text-left">Customer</th>
-                            <th className="p-2 text-left">Vehicle</th>
-                            <th className="p-2 text-center">View</th>
-                            <th className="p-2 text-center">Use</th>
+                            <th className="p-3 text-left">Res #</th>
+                            <th className="p-3 text-left">Customer</th>
+                            <th className="p-3 text-left">Vehicle</th>
+                            <th className="p-3 text-left">Drop Off</th>
+                            <th className="p-3 text-center">View</th>
+                            <th className="p-3 text-center">Use</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -287,24 +289,25 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                                     isReturned ? "animate-pulse-green" : "hover:bg-muted/50"
                                   )}
                                 >
-                                  <td className="p-2 font-medium">
-                                    <button
-                                      type="button"
+                                  <td className="p-3 font-medium">
+                                    <Badge
+                                      variant="secondary"
                                       onClick={() => copyToClipboard(res.resNo)}
-                                      className="hover:underline flex items-center gap-1 text-primary focus:outline-none"
+                                      className="cursor-pointer hover:bg-secondary/80 transition-colors"
                                       title="Click to copy"
                                     >
                                       {res.resNo}
-                                    </button>
+                                    </Badge>
                                   </td>
-                                  <td className="p-2">{res.customer}</td>
-                                  <td className="p-2">{res.vehicle.split(' ')[0]}</td>
-                                  <td className="p-2 text-center">
+                                  <td className="p-3">{res.customer}</td>
+                                  <td className="p-3">{res.vehicle.split(' ')[0]}</td>
+                                  <td className="p-3 whitespace-nowrap">{res.dropOff}</td>
+                                  <td className="p-3 text-center">
                                     <Button size="sm" onClick={() => openReservation(res.resNo)}>
                                       Open
                                     </Button>
                                   </td>
-                                  <td className="p-2 text-center">
+                                  <td className="p-3 text-center">
                                     <Button size="sm" variant="outline" onClick={() => selectReservation(res.resNo)}>
                                       Add
                                     </Button>

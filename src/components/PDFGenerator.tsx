@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -24,11 +24,65 @@ export const PDFGenerator = ({ records, staff, branchName, reportDate }: PDFGene
   const { toast } = useToast();
 
 
+  // Handle canvas resizing to prevent offset issues
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Set initial context styles
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const resizeCanvas = () => {
+      // Get the display size (CSS width/height)
+      const rect = canvas.getBoundingClientRect();
+
+      // Set the internal bitmap size to match display size * pixel ratio
+      // This fixes the offset and scaling issue (blurriness)
+      canvas.width = rect.width * window.devicePixelRatio;
+      canvas.height = rect.height * window.devicePixelRatio;
+
+      // Scale context to match
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+      // Restore context styles after resize (resize clears context)
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+    };
+
+    // Initial resize
+    resizeCanvas();
+
+    // Observe size changes
+    const observer = new ResizeObserver(() => {
+      resizeCanvas();
+    });
+    observer.observe(canvas);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   // Signature canvas functions (mouse + touch)
   const getPointerPos = (e: React.MouseEvent<HTMLCanvasElement> | TouchEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
+
+    // Calculate scale factors if bitmap size diffs from client size (though they should match now)
+    // Actually, since we set canvas.width = rect.width * pixelRatio, 
+    // and context.scale(pixelRatio, pixelRatio),
+    // input coordinates (client - rect) are in CSS pixels, which map 1:1 to context logic units.
+    // So simple subtraction is correct.
+
     if ('touches' in e && e.touches.length > 0) {
       return {
         x: e.touches[0].clientX - rect.left,
@@ -156,16 +210,11 @@ export const PDFGenerator = ({ records, staff, branchName, reportDate }: PDFGene
             </div>
             <canvas
               ref={canvasRef}
-              width={300}
-              height={80}
-              className="border border-border rounded bg-white cursor-crosshair w-full"
-              onMouseDown={startDrawing}
-              onMouseMove={draw}
-              onMouseUp={stopDrawing}
-              onMouseLeave={stopDrawing}
-              onTouchStart={e => startDrawing(e.nativeEvent)}
-              onTouchMove={e => draw(e.nativeEvent)}
-              onTouchEnd={stopDrawing}
+              className="bg-white cursor-crosshair w-full h-24 touch-none"
+              onPointerDown={startDrawing}
+              onPointerMove={draw}
+              onPointerUp={stopDrawing}
+              onPointerLeave={stopDrawing}
               style={{ touchAction: 'none' }}
             />
             <p className="text-xs text-muted-foreground">Draw your signature above. It will be included in the PDF report.</p>
