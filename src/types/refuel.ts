@@ -7,6 +7,7 @@ export interface RefuelRecord {
   refuelledBy: string;
   createdAt: Date;
   receiptPhotoUrl?: string;
+  addedBy?: string; // Display name derived from created_by relation
 }
 
 export interface Staff {
@@ -31,7 +32,7 @@ export interface RefuelFormData {
 export interface RefuelRecordUpdate {
   rego?: string;
   amount?: number;
-  refuelledBy?: string;
+  refuelledBy?: string; // Staff ID in updates
   reservationNumber?: string;
   addedToRCM?: boolean;
   receiptPhotoUrl?: string;

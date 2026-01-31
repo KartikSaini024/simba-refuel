@@ -98,7 +98,7 @@ const Index = () => {
 
       const { data, error } = await supabase
         .from('refuel_records')
-        .select('*')
+        .select('*, creator:profiles!refuel_records_created_by_fkey(first_name, last_name), refueler:staff!refuel_records_refueled_by_fkey(name)')
         .eq('branch_id', selectedBranchId)
         .gte('created_at', startOfDay.toISOString())
         .lte('created_at', endOfDay.toISOString())
@@ -110,11 +110,12 @@ const Index = () => {
         id: record.id,
         rego: record.rego,
         amount: record.amount,
-        refuelledBy: record.refuelled_by,
+        refuelledBy: (record as any).refueler?.name || record.refuelled_by,
         reservationNumber: record.reservation_number,
         addedToRCM: record.added_to_rcm ?? false,
         createdAt: new Date(record.created_at || new Date()),
         receiptPhotoUrl: record.receipt_photo_url ?? undefined,
+        addedBy: (record as any).creator ? `${(record as any).creator.first_name} ${(record as any).creator.last_name}` : undefined,
       }));
 
       setRecords(transformedRecords);
@@ -145,7 +146,10 @@ const Index = () => {
           rego: recordData.rego.toUpperCase(),
           amount: parseFloat(recordData.amount),
           reservation_number: recordData.reservationNumber,
-          refuelled_by: recordData.refuelledBy,
+          refueled_by: recordData.refuelledBy, // Trying to save UUID to correct column
+          // refuelled_by: recordData.refuelledBy, // Legacy text field, maybe stop writing or write name lookup? 
+          // Since form sends ID now, we shouldn't put ID in text field. 
+          // Let's rely on the UUID field.
           created_by: recordData.createdBy,
           created_at: recordData.createdAt.toISOString(),
           added_to_rcm: recordData.addedToRCM,
@@ -182,7 +186,11 @@ const Index = () => {
       if (updatedData.rego) updateObject.rego = updatedData.rego.toUpperCase();
       if (updatedData.amount) updateObject.amount = updatedData.amount;
       if (updatedData.reservationNumber) updateObject.reservation_number = updatedData.reservationNumber;
-      if (updatedData.refuelledBy) updateObject.refuelled_by = updatedData.refuelledBy;
+      if (updatedData.refuelledBy) {
+        // Assuming updatedData.refuelledBy is now an ID (from RefuelTable edit?)
+        // Wait, RefuelTable also needs update.
+        updateObject.refueled_by = updatedData.refuelledBy;
+      }
       if (updatedData.createdAt) {
         updateObject.created_at = updatedData.createdAt.toISOString();
       }

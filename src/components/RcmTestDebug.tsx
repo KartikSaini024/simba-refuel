@@ -63,12 +63,12 @@ const RcmTestDebug: React.FC = () => {
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                     <Terminal className="h-4 w-4" />
-                    Test RCM
+                    Connect RCM
                 </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                    <DialogTitle>RCM Connection Test</DialogTitle>
+                    <DialogTitle>RCM Connection</DialogTitle>
                     <DialogDescription>
                         Tries to login to RCM using hardcoded dev credentials to verify connectivity and cookie retrieval.
                     </DialogDescription>

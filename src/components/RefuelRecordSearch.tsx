@@ -10,13 +10,28 @@ import { Search, X, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 export interface RefuelRecord {
   id: string;
@@ -24,7 +39,7 @@ export interface RefuelRecord {
   rego: string;
   amount: number;
   added_to_rcm: boolean;
-  refuelled_by: string;
+  refueled_by: string;
   created_by: string;
   refuel_datetime: string;
   receipt_photo_url?: string;
@@ -33,6 +48,9 @@ export interface RefuelRecord {
   profiles?: {
     first_name: string;
     last_name: string;
+  };
+  refueler?: {
+    name: string;
   };
 }
 
@@ -50,14 +68,27 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
   const [results, setResults] = useState<RefuelRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [staffList, setStaffList] = useState<any[]>([]);
+  const [openCombobox, setOpenCombobox] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const fetchStaff = async () => {
+      const { data } = await supabase
+        .from('staff')
+        .select('id, name')
+        .order('name');
+      if (data) setStaffList(data);
+    };
+    fetchStaff();
+  }, []);
+
   const searchFieldOptions = [
-  { value: 'rego', label: 'Vehicle Registration' },
-  { value: 'reservation_number', label: 'Reservation Number' },
-  { value: 'refuelled_by', label: 'Refuelled By' },
-  // { value: 'created_by', label: 'Created By' }, // commented out
-  { value: 'rcm_status', label: 'RCM Status' }
+    { value: 'rego', label: 'Vehicle Registration' },
+    { value: 'reservation_number', label: 'Reservation Number' },
+    { value: 'refueled_by', label: 'Refueled By' },
+    // { value: 'created_by', label: 'Created By' }, // commented out
+    { value: 'rcm_status', label: 'RCM Status' }
   ];
 
   const handleSearch = async () => {
@@ -78,7 +109,8 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
         .from('refuel_records')
         .select(`
           *,
-          profiles!refuel_records_created_by_fkey(first_name, last_name)
+          profiles!refuel_records_created_by_fkey(first_name, last_name),
+          refueler:staff!refuel_records_refueled_by_fkey(name)
         `)
         .gte('refuel_datetime', `${dateFrom}T00:00:00`)
         .lt('refuel_datetime', `${dateTo}T23:59:59`)
@@ -95,10 +127,15 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
           query = query.eq('added_to_rcm', rcmStatus === 'true');
         }
       }
-      // else if (searchField === 'created_by') {
-      //   // Search by first or last name in joined profile (Supabase PostgREST syntax)
-      //   query = query.or(`(profiles.first_name.ilike.%${searchValue}%,profiles.last_name.ilike.%${searchValue}%)`);
-      // }
+
+      else if (searchField === 'created_by') {
+        // Search by first or last name in joined profile
+        query = query.or(`first_name.ilike.%${searchValue}%,last_name.ilike.%${searchValue}%`, { foreignTable: 'profiles' });
+      }
+      else if (searchField === 'refueled_by') {
+        // Search by exact UUID match for refueled_by
+        query = query.eq('refueled_by', searchValue);
+      }
       else if (searchField === 'rego') {
         query = query.ilike('rego', `%${searchValue.toUpperCase()}%`);
       } else {
@@ -112,7 +149,8 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
       // Process results to include created_by name
       const processedResults = (data || []).map((record: any) => ({
         ...record,
-        created_by_name: record.profiles ? `${record.profiles.first_name} ${record.profiles.last_name}` : 'Unknown User'
+        created_by_name: record.profiles ? `${record.profiles.first_name} ${record.profiles.last_name}` : 'Unknown User',
+        refueled_by_name: record.refueler ? record.refueler.name : record.refueled_by
       }));
 
       setResults(processedResults);
@@ -196,6 +234,53 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                   </SelectContent>
                 </Select>
               </div>
+            ) : searchField === 'refueled_by' ? (
+              <div className="space-y-2">
+                <Label>Refueled By</Label>
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openCombobox}
+                      className="w-full justify-between"
+                    >
+                      {searchValue
+                        ? staffList.find((staff) => staff.id === searchValue)?.name
+                        : "Select staff..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search staff..." />
+                      <CommandList>
+                        <CommandEmpty>No staff found.</CommandEmpty>
+                        <CommandGroup>
+                          {staffList.map((staff) => (
+                            <CommandItem
+                              key={staff.id}
+                              value={staff.name}
+                              onSelect={() => {
+                                setSearchValue(staff.id === searchValue ? "" : staff.id);
+                                setOpenCombobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  searchValue === staff.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {staff.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             ) : (
               <div className="space-y-2">
                 <Label htmlFor="searchValue">Search Value</Label>
@@ -232,8 +317,8 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
             <div className="space-y-2">
               <Label>&nbsp;</Label>
               <div className="flex gap-2">
-                <Button 
-                  onClick={handleSearch} 
+                <Button
+                  onClick={handleSearch}
                   disabled={loading}
                   className="flex-1"
                 >
@@ -268,12 +353,12 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                     <TableRow className="bg-muted/50">
                       <TableHead>Reservation #</TableHead>
                       <TableHead>Registration</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>RCM Status</TableHead>
-                      <TableHead>Refuelled By</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-center">RCM Status</TableHead>
+                      <TableHead>Refueled By</TableHead>
                       <TableHead>Created By</TableHead>
                       <TableHead>Date & Time</TableHead>
-                      <TableHead>Receipt</TableHead>
+                      <TableHead className="text-center">Receipt</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -290,12 +375,12 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                         <TableCell className="text-right font-medium">
                           ${record.amount.toFixed(2)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-center">
                           <Badge variant={record.added_to_rcm ? "default" : "secondary"}>
                             {record.added_to_rcm ? "Yes" : "No"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{record.refuelled_by}</TableCell>
+                        <TableCell>{(record as any).refueled_by_name || record.refueled_by}</TableCell>
                         <TableCell>{record.created_by_name || 'Unknown User'}</TableCell>
                         <TableCell className="text-muted-foreground">
                           <div className="space-y-1">

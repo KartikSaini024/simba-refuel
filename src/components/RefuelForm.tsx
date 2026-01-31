@@ -351,7 +351,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
               >
                 <option value="">Select staff member</option>
                 {staffMembers.map((staff) => (
-                  <option key={staff.id} value={staff.name}>
+                  <option key={staff.id} value={staff.id}>
                     {staff.name}
                   </option>
                 ))}

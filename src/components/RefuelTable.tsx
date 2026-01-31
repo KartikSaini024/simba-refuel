@@ -210,6 +210,7 @@ export const RefuelTable = ({
                 <TableHead>RCM Status</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Refuelled By</TableHead>
+                <TableHead>Added By</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead>Receipt</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
@@ -299,7 +300,7 @@ export const RefuelTable = ({
                         </SelectTrigger>
                         <SelectContent className="bg-card z-50">
                           {staff.map((member) => (
-                            <SelectItem key={member.id} value={member.name}>
+                            <SelectItem key={member.id} value={member.id}>
                               {member.name}
                             </SelectItem>
                           ))}
@@ -308,6 +309,11 @@ export const RefuelTable = ({
                     ) : (
                       record.refuelledBy
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-muted-foreground text-sm">
+                      {record.addedBy || "-"}
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {editingId === record.id ? (
@@ -347,13 +353,13 @@ export const RefuelTable = ({
                                 editingPhoto
                                   ? URL.createObjectURL(editingPhoto)
                                   : editData.receiptPhotoUrl
-                                  ? editData.receiptPhotoUrl.startsWith("http")
-                                    ? editData.receiptPhotoUrl
-                                    : supabase.storage
+                                    ? editData.receiptPhotoUrl.startsWith("http")
+                                      ? editData.receiptPhotoUrl
+                                      : supabase.storage
                                         .from("refuel-receipts")
                                         .getPublicUrl(editData.receiptPhotoUrl)
                                         .data.publicUrl
-                                  : ""
+                                    : ""
                               }
                               alt="Receipt preview"
                               className="w-16 h-16 object-cover rounded border"
@@ -405,9 +411,9 @@ export const RefuelTable = ({
                                 record.receiptPhotoUrl.startsWith("http")
                                   ? record.receiptPhotoUrl
                                   : supabase.storage
-                                      .from("refuel-receipts")
-                                      .getPublicUrl(record.receiptPhotoUrl).data
-                                      .publicUrl
+                                    .from("refuel-receipts")
+                                    .getPublicUrl(record.receiptPhotoUrl).data
+                                    .publicUrl
                               }
                               alt={`Receipt for ${record.rego}`}
                               className="max-w-full max-h-96 object-contain rounded-md"
