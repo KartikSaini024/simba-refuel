@@ -11,7 +11,7 @@ import {
 import { Terminal, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-const RcmTestDebug: React.FC = () => {
+const ConnectRCM: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -120,4 +120,4 @@ const RcmTestDebug: React.FC = () => {
     );
 };
 
-export default RcmTestDebug;
+export default ConnectRCM;

@@ -150,7 +150,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
       toast({
         variant: "destructive",
         title: "Not Connected",
-        description: "Please run 'Test RCM' from the menu first to authenticate."
+        description: "Please run 'Connect RCM' from the menu first to authenticate."
       });
       return;
     }

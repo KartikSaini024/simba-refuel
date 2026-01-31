@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
-import RcmTestDebug from '@/components/RcmTestDebug';
+import ConnectRCM from '@/components/ConnectRCM';
 import { Menu, Settings, LogOut } from 'lucide-react';
 
 interface HeaderMenuProps {
@@ -16,7 +16,7 @@ export const HeaderMenu = ({ profile, onSignOut }: HeaderMenuProps) => {
 
   const MenuItems = () => (
     <>
-      <RcmTestDebug />
+      <ConnectRCM />
       <PasswordChangeDialog />
       {profile?.role === 'admin' && (
         <Link to="/admin" onClick={() => setIsOpen(false)}>
