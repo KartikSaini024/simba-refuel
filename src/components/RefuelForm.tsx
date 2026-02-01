@@ -168,6 +168,9 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
 
       const res = await fetch('/api/rcm-reservation-search', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ rego: formData.rego, cookies, dateStr })
       });
 
