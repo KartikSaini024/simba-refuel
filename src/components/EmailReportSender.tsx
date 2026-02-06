@@ -297,7 +297,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
       formData.append('subject', subject);
       formData.append('message', message);
       formData.append('branchName', branchName);
-      formData.append('date', new Date().toISOString());
+      formData.append('date', date.toISOString());
       formData.append('records', JSON.stringify(records));
 
       // Append attachments if any
