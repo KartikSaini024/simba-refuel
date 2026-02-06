@@ -319,8 +319,22 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         setOpen(false);
         setAttachments([]);
       } else {
-        const data = await res.json();
-        throw new Error(data?.error || "Failed to send email");
+      } else {
+        let errorMessage = "Failed to send email";
+        try {
+          const text = await res.text();
+          try {
+            const data = JSON.parse(text);
+            errorMessage = data?.error || errorMessage;
+          } catch {
+            // failed to parse JSON, use text or status
+            errorMessage = `Server Error (${res.status}): ${text.substring(0, 50)}...`;
+          }
+        } catch (e) {
+          // failed to read text
+          errorMessage = `Connection Error (${res.status})`;
+        }
+        throw new Error(errorMessage);
       }
     } catch (err: any) {
       console.error('Email send error:', err);
