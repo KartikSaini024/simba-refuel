@@ -319,7 +319,6 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
         setOpen(false);
         setAttachments([]);
       } else {
-      } else {
         let errorMessage = "Failed to send email";
         try {
           const text = await res.text();
