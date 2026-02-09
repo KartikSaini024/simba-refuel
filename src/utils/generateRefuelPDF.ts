@@ -23,11 +23,11 @@ const getImageAsBase64 = (url: string): Promise<string> => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (ctx) {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-          const dataURL = canvas.toDataURL('image/png');
-          resolve(dataURL);
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        const dataURL = canvas.toDataURL('image/png');
+        resolve(dataURL);
       } else {
         reject(new Error("Could not get canvas context"));
       }
@@ -129,7 +129,13 @@ export const generateRefuelPDF = async ({
     record.addedToRCM ? "Yes" : "No",
     `$${record.amount.toFixed(2)}`,
     record.refuelledBy,
-    format(new Date(record.createdAt), "HH:mm"),
+    // Format time in Sydney timezone
+    new Date(record.createdAt).toLocaleTimeString('en-AU', {
+      timeZone: 'Australia/Sydney',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }),
     record.receiptImage ? "Yes" : "No"
   ]);
 
@@ -245,17 +251,17 @@ export const generateRefuelPDF = async ({
 
   // Signature
   if (signatureData) {
-     try {
-       // If empty or invalid, might fail
-       if (signatureData.length > 100) {
-          doc.addImage(signatureData, 'PNG', 120, signatureY - 10, 60, 20);
-       } else {
-         throw new Error("Invalid signature data");
-       }
-     } catch {
-       doc.line(120, signatureY + 20, 180, signatureY + 20);
-       doc.text("Signature", 145, signatureY + 25);
-     }
+    try {
+      // If empty or invalid, might fail
+      if (signatureData.length > 100) {
+        doc.addImage(signatureData, 'PNG', 120, signatureY - 10, 60, 20);
+      } else {
+        throw new Error("Invalid signature data");
+      }
+    } catch {
+      doc.line(120, signatureY + 20, 180, signatureY + 20);
+      doc.text("Signature", 145, signatureY + 25);
+    }
   } else {
     doc.line(120, signatureY + 20, 180, signatureY + 20);
     doc.text("Signature", 145, signatureY + 25);

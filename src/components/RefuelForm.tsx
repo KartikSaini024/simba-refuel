@@ -288,7 +288,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                                 <tr
                                   key={res.resNo}
                                   className={cn(
-                                    "border-t transition-colors",
+                                    "border-t transition-colors relative",
                                     isReturned ? "animate-pulse-green" : "hover:bg-muted/50"
                                   )}
                                 >
@@ -301,6 +301,13 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                                     >
                                       {res.resNo}
                                     </Badge>
+                                    {isReturned && (
+                                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                                        <Badge className="bg-green-600 hover:bg-green-700 text-white text-[10px] h-5 px-2 shadow-sm border border-white/20">
+                                          Most Recent Return
+                                        </Badge>
+                                      </div>
+                                    )}
                                   </td>
                                   <td className="p-3">{res.customer}</td>
                                   <td className="p-3">{res.vehicle.split(' ')[0]}</td>

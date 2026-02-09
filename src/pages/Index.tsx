@@ -110,7 +110,7 @@ const Index = () => {
         id: record.id,
         rego: record.rego,
         amount: record.amount,
-        refuelledBy: (record as any).refueler?.name || record.refuelled_by,
+        refuelledBy: record.refueled_by || '', // Use ID from DB, fallback to empty string
         reservationNumber: record.reservation_number,
         addedToRCM: record.added_to_rcm ?? false,
         createdAt: new Date(record.created_at || new Date()),
@@ -146,15 +146,12 @@ const Index = () => {
           rego: recordData.rego.toUpperCase(),
           amount: parseFloat(recordData.amount),
           reservation_number: recordData.reservationNumber,
-          refueled_by: recordData.refuelledBy, // Trying to save UUID to correct column
-          // refuelled_by: recordData.refuelledBy, // Legacy text field, maybe stop writing or write name lookup? 
-          // Since form sends ID now, we shouldn't put ID in text field. 
-          // Let's rely on the UUID field.
+          refueled_by: recordData.refuelledBy,
           created_by: recordData.createdBy,
           created_at: recordData.createdAt.toISOString(),
           added_to_rcm: recordData.addedToRCM,
           receipt_photo_url: recordData.receiptPhotoUrl,
-        })
+        } as any)
         .select()
         .single();
 
@@ -198,7 +195,7 @@ const Index = () => {
 
       const { error } = await supabase
         .from('refuel_records')
-        .update(updateObject)
+        .update(updateObject as any)
         .eq('id', id);
 
       if (error) throw error;

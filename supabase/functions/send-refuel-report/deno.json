@@ -1,0 +1,8 @@
+{
+    "imports": {
+        "nodemailer": "npm:nodemailer@6.9.9",
+        "jspdf": "npm:jspdf@2.5.1",
+        "jspdf-autotable": "npm:jspdf-autotable@3.8.1",
+        "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
+    }
+}

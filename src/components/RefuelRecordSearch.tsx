@@ -380,7 +380,13 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                             {record.added_to_rcm ? "Yes" : "No"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{(record as any).refueled_by_name || record.refueled_by}</TableCell>
+                        <TableCell>
+                          {
+                            (record as any).refueled_by_name ||
+                            staffList.find(s => s.id === record.refueled_by)?.name ||
+                            record.refueled_by
+                          }
+                        </TableCell>
                         <TableCell>{record.created_by_name || 'Unknown User'}</TableCell>
                         <TableCell className="text-muted-foreground">
                           <div className="space-y-1">
