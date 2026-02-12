@@ -110,7 +110,7 @@ const Index = () => {
         id: record.id,
         rego: record.rego,
         amount: record.amount,
-        refuelledBy: record.refueled_by || '', // Use ID from DB, fallback to empty string
+        refuelledBy: (record as any).refueler?.name || record.refuelled_by || record.refueled_by || '',
         reservationNumber: record.reservation_number,
         addedToRCM: record.added_to_rcm ?? false,
         createdAt: new Date(record.created_at || new Date()),

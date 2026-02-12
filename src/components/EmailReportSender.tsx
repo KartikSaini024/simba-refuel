@@ -194,7 +194,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
 
           const { data: todaysRecordsData, error: recordsError } = await supabase
             .from('refuel_records')
-            .select('*')
+            .select('*, refueler:staff!refuel_records_refueled_by_fkey(name)')
             .eq('branch_id', branchId)
             .gte('created_at', startOfDay.toISOString())
             .lte('created_at', endOfDay.toISOString())
@@ -211,7 +211,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
             id: r.id,
             rego: r.rego,
             amount: r.amount,
-            refuelledBy: r.refuelled_by,
+            refuelledBy: r.refueler?.name || r.refuelled_by || r.refueled_by || '',
             reservationNumber: r.reservation_number,
             addedToRCM: r.added_to_rcm ?? false,
             createdAt: new Date(r.created_at),

@@ -107,7 +107,7 @@ serve(async (req) => {
 
             const { data: recordsData, error: recordsError } = await supabase
                 .from('refuel_records')
-                .select('*')
+                .select('*, staff(name)')
                 .eq('branch_id', branchId)
                 .gte('created_at', thirtyHoursAgo.toISOString()) // Fetch a wide net
                 .order('created_at', { ascending: false });
@@ -149,7 +149,7 @@ serve(async (req) => {
                     r.rego || '',
                     r.added_to_rcm ? 'Yes' : 'No',
                     `$${Number(r.amount).toFixed(2)}`,
-                    r.refuelled_by || '',
+                    r.staff?.name || r.refueled_by || '',
                     new Date(r.created_at).toLocaleTimeString('en-AU', { timeZone: 'Australia/Sydney', hour: '2-digit', minute: '2-digit', hour12: false })
                 ]);
 
