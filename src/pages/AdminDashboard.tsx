@@ -10,7 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3, Image, Settings } from 'lucide-react';
+import { CheckCircle, XCircle, Plus, Trash2, ExternalLink, Users, Building2, BarChart3, Image, Settings, MoreHorizontal, Pencil } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { LoadingSpinner, InlineLoader } from '@/components/LoadingSpinner';
@@ -20,6 +21,7 @@ import { Profile, Branch } from '@/types/database';
 import { RefuelStatistics } from '@/components/RefuelStatistics';
 import RefuelRecordSearch from '@/components/RefuelRecordSearch';
 import { UserBranchManagement } from '@/components/UserBranchManagement';
+import { AdminRefuelViewer } from '@/components/AdminRefuelViewer'; // Import the new component
 import { format } from 'date-fns';
 
 const AdminDashboard = () => {
@@ -31,6 +33,7 @@ const AdminDashboard = () => {
   const [newBranch, setNewBranch] = useState({ code: '', name: '', location: '' });
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
   const [selectedUserForBranchManagement, setSelectedUserForBranchManagement] = useState<Profile | null>(null);
+  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
   const [loading, setLoading] = useState({
     pendingUsers: true,
     allUsers: true,
@@ -196,6 +199,34 @@ const AdminDashboard = () => {
     }
   };
 
+  const updateBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBranch) return;
+
+    try {
+      const { error } = await supabase
+        .from('branches')
+        .update({
+          code: editingBranch.code,
+          name: editingBranch.name,
+          location: editingBranch.location
+        })
+        .eq('id', editingBranch.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Branch updated",
+        description: "Branch details have been updated successfully.",
+      });
+
+      setEditingBranch(null);
+      fetchBranches();
+    } catch (error) {
+      handleError(error, 'Failed to update branch');
+    }
+  };
+
   const updateUserRole = async (userId: string, newRole: 'staff' | 'admin') => {
     try {
       const updateData: any = { role: newRole };
@@ -248,7 +279,7 @@ const AdminDashboard = () => {
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ branch_id: branchId })
+        .update({ branch_id: branchId as any })
         .eq('user_id', userId);
 
       if (error) throw error;
@@ -285,9 +316,14 @@ const AdminDashboard = () => {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="branches">Branch Management</TabsTrigger>
+          <TabsTrigger value="refuel-log">Refuel Log</TabsTrigger>
           <TabsTrigger value="statistics">Statistics</TabsTrigger>
-          <TabsTrigger value="refuel">Branch Operations</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="refuel-log" className="space-y-6">
+          <RefuelRecordSearch branches={branches} />
+          <AdminRefuelViewer branches={branches} />
+        </TabsContent>
 
         <TabsContent value="users" className="space-y-6">
           <Card>
@@ -524,7 +560,6 @@ const AdminDashboard = () => {
                       <TableHead>Code</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Location</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -534,20 +569,39 @@ const AdminDashboard = () => {
                         <TableCell className="font-mono">{branch.code}</TableCell>
                         <TableCell>{branch.name}</TableCell>
                         <TableCell>{branch.location}</TableCell>
-                        <TableCell>
-                          <Badge variant={branch.is_active ? 'default' : 'secondary'}>
-                            {branch.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteBranch(branch.id)}
-                          >
-                            <Trash2 className="h-4 w-4 mr-1" />
-                            Delete
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Link to={`/?branch=${branch.id}`} target="_blank">
+                              <Button size="sm" variant="outline">
+                                <ExternalLink className="h-4 w-4 mr-1" />
+                                Open
+                              </Button>
+                            </Link>
+
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => setEditingBranch(branch)}>
+                                  <Pencil className="mr-2 h-4 w-4" />
+                                  Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => deleteBranch(branch.id)}
+                                  className="text-red-600 focus:text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Branch
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -556,46 +610,8 @@ const AdminDashboard = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="refuel" className="space-y-6">
-          <RefuelRecordSearch branches={branches} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Branch Operations</CardTitle>
-              <CardDescription>Access branch-specific refuel management systems</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {branches.length === 0 ? (
-                <EmptyState
-                  icon={<BarChart3 className="h-6 w-6" />}
-                  title="No branches available"
-                  description="Create branches first to access their operations."
-                />
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {branches.map((branch) => (
-                    <Card key={branch.id} className="hover:shadow-md transition-shadow duration-200">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">{branch.code}</CardTitle>
-                        <CardDescription>{branch.name}</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground mb-4">{branch.location}</p>
-                        <Link to={`/?branch=${branch.id}`}>
-                          <Button className="w-full" size="sm">
-                            <ExternalLink className="h-4 w-4 mr-2" />
-                            Open Branch Dashboard
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="statistics">
@@ -620,7 +636,55 @@ const AdminDashboard = () => {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Edit Branch Dialog */}
+      <Dialog open={!!editingBranch} onOpenChange={(open) => !open && setEditingBranch(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Branch</DialogTitle>
+          </DialogHeader>
+          {editingBranch && (
+            <form onSubmit={updateBranch} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-code">Branch Code</Label>
+                <Input
+                  id="edit-code"
+                  value={editingBranch.code}
+                  onChange={(e) => setEditingBranch({ ...editingBranch, code: e.target.value.toUpperCase() })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Branch Name</Label>
+                <Input
+                  id="edit-name"
+                  value={editingBranch.name}
+                  onChange={(e) => setEditingBranch({ ...editingBranch, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-location">Location</Label>
+                <Input
+                  id="edit-location"
+                  value={editingBranch.location || ''}
+                  onChange={(e) => setEditingBranch({ ...editingBranch, location: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setEditingBranch(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Save Changes
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div >
   );
 };
 

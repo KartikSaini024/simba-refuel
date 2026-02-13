@@ -347,7 +347,7 @@ const RefuelRecordSearch: React.FC<RefuelRecordSearchProps> = ({ branches = [] }
                 No records found matching your search criteria.
               </div>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border max-h-[600px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
