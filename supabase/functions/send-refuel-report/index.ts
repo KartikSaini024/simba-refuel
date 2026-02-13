@@ -194,6 +194,16 @@ serve(async (req) => {
                 }] : []
             });
 
+            // Update last_sent_at
+            const { error: updateError } = await supabase
+                .from('branch_email_settings')
+                .update({ last_sent_at: new Date().toISOString() })
+                .eq('branch_id', branchId);
+
+            if (updateError) {
+                console.error(`Failed to update last_sent_at for ${branchName}:`, updateError);
+            }
+
             results.push({ branch: branchName, status: 'Sent', count: todaysRecords.length });
         }
 

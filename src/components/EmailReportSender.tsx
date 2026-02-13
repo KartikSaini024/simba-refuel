@@ -45,6 +45,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
   const [scheduleTime, setScheduleTime] = useState("20:00");
   const [autoRecipient, setAutoRecipient] = useState("");
   const [autoCC, setAutoCC] = useState("");
+  const [lastSentAt, setLastSentAt] = useState<string | null>(null);
 
   // Load settings from Supabase
   useEffect(() => {
@@ -70,12 +71,14 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
           setScheduleTime(settings.schedule_time ? settings.schedule_time.slice(0, 5) : "20:00");
           setAutoRecipient(settings.recipient ?? "");
           setAutoCC(settings.cc ?? "");
+          setLastSentAt(settings.last_sent_at ?? null);
         } else {
           // Defaults
           setAutoSendEnabled(false);
           setScheduleTime("20:00");
           setAutoRecipient("");
           setAutoCC("");
+          setLastSentAt(null);
         }
       } catch (err) {
         console.error('Failed to load settings:', err);
@@ -535,6 +538,9 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
             </Button>
 
             <div className="pt-2 border-t">
+              <p className="text-xs text-muted-foreground mb-2 text-center">
+                Last Sent: {lastSentAt ? format(new Date(lastSentAt), 'dd/MM/yyyy h:mm a') : 'Never'}
+              </p>
               <Button
                 onClick={handleResetStatus}
                 variant="ghost"

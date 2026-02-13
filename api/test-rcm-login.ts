@@ -47,14 +47,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const eventValidation = eventValidationMatch[1];
 
         // Step 2: POST credentials
+        const rcmUsername = process.env.RCM_USERNAME;
+        const rcmPassword = process.env.RCM_PASSWORD;
+
+        if (!rcmUsername || !rcmPassword) {
+            console.error('[RCM API] Missing RCM_USERNAME or RCM_PASSWORD env vars');
+            return res.status(500).json({
+                success: false,
+                message: 'Server Configuration Error: Missing RCM Credentials'
+            });
+        }
+
         const postData = querystring.stringify({
             '__EVENTTARGET': '',
             '__EVENTARGUMENT': '',
             '__VIEWSTATE': viewState,
             '__VIEWSTATEGENERATOR': viewStateGenerator,
             '__EVENTVALIDATION': eventValidation,
-            'ctl00$MainContent$Username': 'devsimba',
-            'ctl00$MainContent$Password': 'Welcome5',
+            'ctl00$MainContent$Username': rcmUsername,
+            'ctl00$MainContent$Password': rcmPassword,
             'ctl00$MainContent$LoginButton': 'Sign in'
         });
 
