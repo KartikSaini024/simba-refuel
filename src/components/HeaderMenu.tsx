@@ -5,17 +5,41 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { PasswordChangeDialog } from '@/components/PasswordChangeDialog';
 import ConnectRCM from '@/components/ConnectRCM';
 import { Menu, Settings, LogOut } from 'lucide-react';
+import BranchSelector from '@/components/BranchSelector';
 
 interface HeaderMenuProps {
   profile: any;
   onSignOut: () => void;
+  showBranchSelector?: boolean;
+  selectedBranchId?: string | null;
+  onBranchChange?: (branchId: string) => void;
 }
 
-export const HeaderMenu = ({ profile, onSignOut }: HeaderMenuProps) => {
+export const HeaderMenu = ({
+  profile,
+  onSignOut,
+  showBranchSelector = false,
+  selectedBranchId,
+  onBranchChange
+}: HeaderMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const MenuItems = () => (
     <>
+      <div className="md:hidden w-full">
+        {showBranchSelector && onBranchChange && (
+          <div className="mb-4">
+            <BranchSelector
+              selectedBranchId={selectedBranchId || null}
+              onBranchChange={(id) => {
+                onBranchChange(id);
+                setIsOpen(false);
+              }}
+              className="w-full"
+            />
+          </div>
+        )}
+      </div>
       <ConnectRCM />
       <PasswordChangeDialog />
       {profile?.role === 'admin' && (

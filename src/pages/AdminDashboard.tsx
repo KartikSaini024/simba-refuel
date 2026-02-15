@@ -313,7 +313,7 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto md:h-10 gap-2 mb-8 md:mb-0">
           <TabsTrigger value="users">User Management</TabsTrigger>
           <TabsTrigger value="branches">Branch Management</TabsTrigger>
           <TabsTrigger value="refuel-log">Refuel Log</TabsTrigger>
@@ -571,7 +571,7 @@ const AdminDashboard = () => {
                         <TableCell>{branch.location}</TableCell>
                         <TableCell className="space-x-2">
                           <div className="flex items-center gap-2">
-                            <Link to={`/?branch=${branch.id}`} target="_blank">
+                            <Link to={`/?branch=${branch.id}`} target="_self">
                               <Button size="sm" variant="outline">
                                 <ExternalLink className="h-4 w-4 mr-1" />
                                 Open

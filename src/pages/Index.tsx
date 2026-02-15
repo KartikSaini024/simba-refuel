@@ -280,12 +280,20 @@ const Index = () => {
                 <span className="text-sm font-medium">{format(new Date(), 'EEEE, MMMM d, yyyy')}</span>
               </div>
               <div className="flex items-center gap-2">
-                <BranchSelector
+                <div className="hidden md:block">
+                  <BranchSelector
+                    selectedBranchId={selectedBranchId}
+                    onBranchChange={setSelectedBranchId}
+                    className="w-48"
+                  />
+                </div>
+                <HeaderMenu
+                  profile={profile}
+                  onSignOut={handleSignOut}
+                  showBranchSelector={true}
                   selectedBranchId={selectedBranchId}
                   onBranchChange={setSelectedBranchId}
-                  className="w-48"
                 />
-                <HeaderMenu profile={profile} onSignOut={handleSignOut} />
               </div>
             </div>
           </div>

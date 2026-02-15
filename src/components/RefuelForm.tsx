@@ -247,6 +247,7 @@ const RefuelForm: React.FC<RefuelFormProps> = ({
                     onChange={(e) => setFormData({ ...formData, rego: e.target.value.toUpperCase() })}
                     placeholder="Enter registration"
                     required
+                    className="w-full"
                   />
                 </div>
                 <Button type="button" variant="outline" size="icon" onClick={handleRcmSearch} disabled={isSearching} title="Search RCM">
