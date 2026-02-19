@@ -44,7 +44,7 @@ export async function sendEmailService(payload: EmailPayload) {
     `).join("");
 
   const reportDate = new Date(date);
-  const dateStr = reportDate.toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const dateStr = reportDate.toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Australia/Sydney' });
 
   const html = `
     <p>Dear Team,</p>

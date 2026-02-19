@@ -300,7 +300,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
       formData.append('subject', subject);
       formData.append('message', message);
       formData.append('branchName', branchName);
-      formData.append('date', date.toISOString());
+      formData.append('date', format(date, 'yyyy-MM-dd'));
       formData.append('records', JSON.stringify(records));
 
       // Append attachments if any
@@ -319,6 +319,7 @@ const EmailReportSender: React.FC<EmailReportSenderProps> = ({
           title: "Email Sent!",
           description: "The report was sent successfully.",
         });
+
         setOpen(false);
         setAttachments([]);
       } else {
